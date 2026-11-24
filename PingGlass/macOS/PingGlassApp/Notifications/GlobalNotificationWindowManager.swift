@@ -274,7 +274,8 @@ final class GlobalNotificationWindowManager {
             cardSizes: sizes,
             in: bounds.visibleFrame,
             position: currentConfig.notificationPosition,
-            edgeMargin: currentConfig.edgeMargin
+            edgeMargin: currentConfig.edgeMargin,
+            stackSpacing: 8.0
         )
 
         guard let newIdx = orderedMessages.firstIndex(where: { $0.id == message.id }),
@@ -360,7 +361,8 @@ final class GlobalNotificationWindowManager {
             cardSizes: sizes,
             in: bounds.visibleFrame,
             position: currentConfig.notificationPosition,
-            edgeMargin: currentConfig.edgeMargin
+            edgeMargin: currentConfig.edgeMargin,
+            stackSpacing: 8.0
         )
 
         let shouldAnimate = animated && currentConfig.animationEnabled && !shouldReduceMotion
@@ -599,7 +601,7 @@ final class GlobalNotificationWindowManager {
                 guard let self else { return }
                 self.dismissAll(animated: self.currentConfig.animationEnabled)
             }
-            let newPanel = FloatingNotificationPanel(contentRect: NSRect(x: 0, y: 0, width: 120, height: 30))
+            let newPanel = FloatingNotificationPanel(contentRect: NSRect(x: 0, y: 0, width: 96, height: 26))
             newPanel.contentView = newView
             clearAllView = newView
             clearAllPanel = newPanel

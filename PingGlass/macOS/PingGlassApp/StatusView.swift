@@ -10,7 +10,7 @@ struct StatusView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 9) {
             headerSection
 
             statusRowsSection
@@ -23,8 +23,8 @@ struct StatusView: View {
 
             controlsSection
         }
-        .padding(14)
-        .frame(width: 356)
+        .padding(11)
+        .frame(width: 316)
         .background(popoverBacking)
     }
 

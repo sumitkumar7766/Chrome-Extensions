@@ -8,7 +8,7 @@ struct SettingsView: View {
     @Binding var activeTab: PopoverTab
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 9) {
             HStack {
                 Button {
                     activeTab = .status
@@ -21,7 +21,7 @@ struct SettingsView: View {
                 Spacer()
 
                 Text("Settings & Privacy")
-                    .font(.headline)
+                    .font(.subheadline.bold())
 
                 Spacer()
                 Color.clear.frame(width: 44, height: 1)
@@ -30,7 +30,7 @@ struct SettingsView: View {
             Divider()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 10) {
                     globalNotificationsSection
                     cardContentSection
                     monitoringSection
@@ -41,10 +41,10 @@ struct SettingsView: View {
                 }
                 .padding(.trailing, 2)
             }
-            .frame(maxHeight: 420)
+            .frame(maxHeight: 330)
         }
-        .padding(14)
-        .frame(width: 348)
+        .padding(11)
+        .frame(width: 316)
     }
 
     private var globalNotificationsSection: some View {

@@ -11,13 +11,13 @@
 
 .pg-stack {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
-  width: 344px;
+  right: 18px;
+  bottom: 18px;
+  width: 316px;
   max-width: calc(100vw - 24px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   pointer-events: none;
   box-sizing: border-box;
 }
@@ -79,14 +79,14 @@
   pointer-events: auto;
   box-sizing: border-box;
   width: 100%;
-  border-radius: 16px;
-  padding: 13px 14px;
-  color: #f8fafc;
-  background: rgba(17, 22, 32, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 10px 12px;
+  color: #ffffff;
+  background: rgba(18, 20, 24, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow:
-    0 16px 38px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 12px 28px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
   backdrop-filter: blur(22px) saturate(165%);
   -webkit-backdrop-filter: blur(22px) saturate(165%);
   overflow: hidden;

@@ -2,21 +2,22 @@ import AppKit
 import SwiftUI
 
 /// Shared native macOS Liquid Glass backdrop:
-/// combines `NSVisualEffectView` (`.behindWindow`) with a neutral graphite/charcoal tint overlay
-/// so colorful or warm wallpapers never create a muddy brown/yellow cast.
+/// combines `NSVisualEffectView` (`.behindWindow`) with a balanced neutral charcoal tint,
+/// crisp semi-transparent white border, and a subtle left-edge green accent glow.
 final class LiquidGlassBackdropView: NSView {
     private let visualEffectView = NSVisualEffectView()
     private let tintLayer = CALayer()
-    private let ambientAccentLayer = CAGradientLayer()
+    private let leftEdgeAccentLayer = CAGradientLayer()
     private let specularTopLayer = CAGradientLayer()
     private let borderLayer = CALayer()
 
     private let cornerRadiusValue: CGFloat
-    private var lastConfig: HelperConfiguration?
+    private let showLeftAccent: Bool
     private var isHovered = false
 
-    init(cornerRadius: CGFloat) {
+    init(cornerRadius: CGFloat, showLeftAccent: Bool = true) {
         self.cornerRadiusValue = cornerRadius
+        self.showLeftAccent = showLeftAccent
         super.init(frame: .zero)
 
         wantsLayer = true
@@ -42,15 +43,17 @@ final class LiquidGlassBackdropView: NSView {
         tintLayer.cornerRadius = cornerRadius
         layer?.addSublayer(tintLayer)
 
-        ambientAccentLayer.cornerRadius = cornerRadius
-        ambientAccentLayer.type = .radial
-        ambientAccentLayer.startPoint = CGPoint(x: 0.08, y: 0.92)
-        ambientAccentLayer.endPoint = CGPoint(x: 0.65, y: 0.25)
-        layer?.addSublayer(ambientAccentLayer)
+        if showLeftAccent {
+            leftEdgeAccentLayer.cornerRadius = cornerRadius
+            leftEdgeAccentLayer.type = .radial
+            leftEdgeAccentLayer.startPoint = CGPoint(x: 0.0, y: 0.58)
+            leftEdgeAccentLayer.endPoint = CGPoint(x: 0.22, y: 0.58)
+            layer?.addSublayer(leftEdgeAccentLayer)
+        }
 
         specularTopLayer.cornerRadius = cornerRadius
         specularTopLayer.startPoint = CGPoint(x: 0.5, y: 1.0)
-        specularTopLayer.endPoint = CGPoint(x: 0.5, y: 0.72)
+        specularTopLayer.endPoint = CGPoint(x: 0.5, y: 0.80)
         layer?.addSublayer(specularTopLayer)
 
         borderLayer.cornerRadius = cornerRadius
@@ -66,13 +69,14 @@ final class LiquidGlassBackdropView: NSView {
     override func layout() {
         super.layout()
         tintLayer.frame = bounds
-        ambientAccentLayer.frame = bounds
+        if showLeftAccent {
+            leftEdgeAccentLayer.frame = bounds
+        }
         specularTopLayer.frame = bounds
         borderLayer.frame = bounds
     }
 
     func apply(config: HelperConfiguration, hovered: Bool = false) {
-        lastConfig = config
         isHovered = hovered
 
         let isDark = config.appearanceMode == .dark
@@ -86,39 +90,58 @@ final class LiquidGlassBackdropView: NSView {
         if isDark {
             appearance = NSAppearance(named: .darkAqua)
             visualEffectView.material = .hudWindow
-            // Neutral smoked charcoal graphite tint prevents warm/yellow wallpaper bleed.
-            let tintAlpha: CGFloat = blurEnabled ? (hovered ? 0.66 : 0.58) : 0.93
-            tintLayer.backgroundColor = NSColor(red: 0.082, green: 0.090, blue: 0.106, alpha: tintAlpha).cgColor
-            ambientAccentLayer.colors = [
-                NSColor(red: 0.145, green: 0.827, blue: 0.400, alpha: hovered ? 0.08 : 0.05).cgColor,
-                NSColor.clear.cgColor,
-            ]
+            let tintAlpha: CGFloat = blurEnabled ? (hovered ? 0.54 : 0.46) : 0.92
+            tintLayer.backgroundColor = NSColor(red: 0.08, green: 0.09, blue: 0.11, alpha: tintAlpha).cgColor
+            if showLeftAccent {
+                leftEdgeAccentLayer.colors = [
+                    NSColor(red: 0.145, green: 0.827, blue: 0.400, alpha: hovered ? 0.30 : 0.22).cgColor,
+                    NSColor.clear.cgColor,
+                ]
+            }
             specularTopLayer.colors = [
-                NSColor.white.withAlphaComponent(hovered ? 0.09 : 0.06).cgColor,
+                NSColor.white.withAlphaComponent(hovered ? 0.14 : 0.09).cgColor,
                 NSColor.clear.cgColor,
             ]
-            borderLayer.borderColor = NSColor.white.withAlphaComponent(hovered ? 0.24 : 0.14).cgColor
+            borderLayer.borderColor = NSColor.white.withAlphaComponent(hovered ? 0.36 : 0.24).cgColor
         } else {
             appearance = NSAppearance(named: .aqua)
             visualEffectView.material = .popover
             let tintAlpha: CGFloat = blurEnabled ? (hovered ? 0.78 : 0.70) : 0.95
             tintLayer.backgroundColor = NSColor(red: 0.96, green: 0.97, blue: 0.985, alpha: tintAlpha).cgColor
-            ambientAccentLayer.colors = [
-                NSColor(red: 0.145, green: 0.827, blue: 0.400, alpha: hovered ? 0.07 : 0.04).cgColor,
-                NSColor.clear.cgColor,
-            ]
+            if showLeftAccent {
+                leftEdgeAccentLayer.colors = [
+                    NSColor(red: 0.145, green: 0.827, blue: 0.400, alpha: hovered ? 0.18 : 0.12).cgColor,
+                    NSColor.clear.cgColor,
+                ]
+            }
             specularTopLayer.colors = [
                 NSColor.white.withAlphaComponent(0.55).cgColor,
                 NSColor.clear.cgColor,
             ]
-            borderLayer.borderColor = NSColor.black.withAlphaComponent(hovered ? 0.16 : 0.09).cgColor
+            borderLayer.borderColor = NSColor.black.withAlphaComponent(hovered ? 0.20 : 0.12).cgColor
         }
 
         CATransaction.commit()
     }
 }
 
-/// Shared SF Symbol button with subtle hover highlight and tooltip.
+/// Crisp WhatsApp badge matching the rounded green phone-bubble icon style.
+struct WhatsAppBadgeIcon: View {
+    var size: CGFloat = 18
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .fill(Color(red: 0.145, green: 0.827, blue: 0.400))
+                .frame(width: size, height: size)
+            Image(systemName: "phone.bubble.fill")
+                .font(.system(size: size * 0.56, weight: .bold))
+                .foregroundStyle(.white)
+        }
+    }
+}
+
+/// Compact bordered square SF Symbol button matching the glass header controls.
 struct GlassIconActionButton: View {
     let systemName: String
     let tooltip: String
@@ -131,12 +154,16 @@ struct GlassIconActionButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 11.5, weight: .medium))
+                .font(.system(size: 10.5, weight: .medium))
                 .foregroundStyle(foreground)
-                .frame(width: 24, height: 24)
+                .frame(width: 22, height: 22)
                 .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(hoverBackground)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(backgroundColor)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(borderColor, lineWidth: 0.75)
                 )
         }
         .buttonStyle(.plain)
@@ -151,26 +178,34 @@ struct GlassIconActionButton: View {
     private var foreground: Color {
         if let tintColor { return tintColor }
         if isDark {
-            return Color.white.opacity(isHovering ? 0.96 : 0.56)
+            return Color.white.opacity(isHovering ? 1.0 : 0.82)
         }
-        return Color(red: 0.08, green: 0.11, blue: 0.17).opacity(isHovering ? 0.95 : 0.55)
+        return Color(red: 0.08, green: 0.11, blue: 0.17).opacity(isHovering ? 0.96 : 0.75)
     }
 
-    private var hoverBackground: Color {
-        guard isHovering else { return .clear }
-        return isDark ? Color.white.opacity(0.12) : Color.black.opacity(0.08)
+    private var backgroundColor: Color {
+        if isDark {
+            return Color.white.opacity(isHovering ? 0.20 : 0.10)
+        }
+        return Color.black.opacity(isHovering ? 0.12 : 0.05)
+    }
+
+    private var borderColor: Color {
+        if isDark {
+            return Color.white.opacity(isHovering ? 0.34 : 0.18)
+        }
+        return Color.black.opacity(isHovering ? 0.20 : 0.10)
     }
 }
 
-/// AppKit wrapper providing reliable hover tracking across inactive background windows,
-/// native Liquid Glass blur, rounded 24px corners, and SwiftUI card content.
+/// Compact AppKit wrapper hosting native Liquid Glass notification cards (`318px` wide).
 final class GlassNotificationCardView: NSView {
-    static let cardWidth: CGFloat = 356.0
-    static let minCardHeight: CGFloat = 96.0
-    static let maxCardHeight: CGFloat = 310.0
-    static let cornerRadius: CGFloat = 24.0
+    static let cardWidth: CGFloat = 318.0
+    static let minCardHeight: CGFloat = 78.0
+    static let maxCardHeight: CGFloat = 230.0
+    static let cornerRadius: CGFloat = 18.0
 
-    private let backdropView = LiquidGlassBackdropView(cornerRadius: GlassNotificationCardView.cornerRadius)
+    private let backdropView = LiquidGlassBackdropView(cornerRadius: GlassNotificationCardView.cornerRadius, showLeftAccent: true)
     private let hostingView: NSHostingView<NotificationCardContentView>
     private var trackingArea: NSTrackingArea?
     private var latestConfig: HelperConfiguration
@@ -199,7 +234,7 @@ final class GlassNotificationCardView: NSView {
             onToggleExpand: onToggleExpand
         )
         self.hostingView = NSHostingView(rootView: content)
-        super.init(frame: NSRect(x: 0, y: 0, width: Self.cardWidth, height: 120))
+        super.init(frame: NSRect(x: 0, y: 0, width: Self.cardWidth, height: 96))
 
         wantsLayer = true
         layer?.cornerRadius = Self.cornerRadius
@@ -236,7 +271,6 @@ final class GlassNotificationCardView: NSView {
         if let trackingArea {
             removeTrackingArea(trackingArea)
         }
-        // `.activeAlways` ensures hover clarity & timer pause work over any active macOS app.
         let area = NSTrackingArea(
             rect: bounds,
             options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
@@ -273,7 +307,7 @@ final class GlassNotificationCardView: NSView {
     }
 }
 
-/// Refined macOS Liquid Glass SwiftUI layout rendered inside `GlassNotificationCardView`.
+/// Compact Liquid Glass card layout matching the reference screenshot.
 private struct NotificationCardContentView: View {
     let message: WhatsAppMessage
     let config: HelperConfiguration
@@ -288,16 +322,16 @@ private struct NotificationCardContentView: View {
 
     private var isDark: Bool { config.appearanceMode == .dark }
     private var primaryText: Color {
-        isDark ? Color(white: 0.96) : Color(red: 0.06, green: 0.08, blue: 0.13)
+        isDark ? .white : Color(red: 0.06, green: 0.08, blue: 0.13)
     }
     private var messageTextColor: Color {
-        isDark ? Color.white.opacity(0.88) : Color(red: 0.14, green: 0.17, blue: 0.24)
+        isDark ? Color.white.opacity(0.90) : Color(red: 0.14, green: 0.17, blue: 0.24)
     }
     private var secondaryText: Color {
-        isDark ? Color.white.opacity(0.58) : Color(red: 0.36, green: 0.40, blue: 0.49)
+        isDark ? Color.white.opacity(0.62) : Color(red: 0.36, green: 0.40, blue: 0.49)
     }
     private var mutedText: Color {
-        isDark ? Color.white.opacity(0.48) : Color(red: 0.45, green: 0.49, blue: 0.58)
+        isDark ? Color.white.opacity(0.55) : Color(red: 0.45, green: 0.49, blue: 0.58)
     }
     private var whatsappGreen: Color {
         Color(red: 0.145, green: 0.827, blue: 0.400)
@@ -325,52 +359,91 @@ private struct NotificationCardContentView: View {
 
     private var canExpandPreview: Bool {
         guard let text = message.text else { return false }
-        return text.count > 160 || text.components(separatedBy: "\n").count > 4
+        return text.count > 120 || text.components(separatedBy: "\n").count > 3
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             headerRow
 
-            VStack(alignment: .leading, spacing: 10) {
-                senderSection
-                messageBodySection
+            HStack(alignment: .top, spacing: 10) {
+                if config.showAvatar {
+                    avatarView
+                        .padding(.top, 2)
+
+                    Rectangle()
+                        .fill(isDark ? Color.white.opacity(0.14) : Color.black.opacity(0.10))
+                        .frame(width: 1)
+                        .padding(.vertical, 2)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    if config.showSender {
+                        Text(displaySender)
+                            .font(.system(size: 14.5, weight: .semibold))
+                            .foregroundStyle(primaryText)
+                            .lineLimit(1)
+                    }
+
+                    if let contextSubtitle {
+                        Text(contextSubtitle)
+                            .font(.system(size: 11.5, weight: .regular))
+                            .foregroundStyle(secondaryText)
+                            .lineLimit(1)
+                    }
+
+                    if config.showPreview, let text = message.text, !text.isEmpty {
+                        Text(text)
+                            .font(.system(size: 12.5, weight: .regular))
+                            .lineSpacing(2.0)
+                            .foregroundStyle(messageTextColor)
+                            .lineLimit(isExpanded ? 7 : 3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 2)
+
+                        if canExpandPreview {
+                            Button(isExpanded ? "Show less" : "Show more") {
+                                isExpanded.toggle()
+                                DispatchQueue.main.async {
+                                    onToggleExpand()
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(whatsappGreen)
+                            .padding(.top, 1)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .contentShape(Rectangle())
             .onTapGesture {
                 onCardClick()
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
         .frame(width: GlassNotificationCardView.cardWidth, alignment: .leading)
     }
 
     private var headerRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             HStack(spacing: 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(whatsappGreen.opacity(isDark ? 0.16 : 0.14))
-                        .frame(width: 20, height: 20)
-                    Image(systemName: "message.fill")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(whatsappGreen)
-                }
+                WhatsAppBadgeIcon(size: 17)
 
                 Text("WhatsApp")
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(secondaryText)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(primaryText.opacity(0.92))
 
                 if message.isTest {
                     Text("TEST")
-                        .font(.system(size: 9, weight: .bold))
-                        .tracking(0.4)
-                        .foregroundStyle(whatsappGreen.opacity(0.95))
+                        .font(.system(size: 8.5, weight: .bold))
+                        .tracking(0.3)
+                        .foregroundStyle(whatsappGreen)
                         .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(whatsappGreen.opacity(0.14), in: Capsule())
-                        .overlay(Capsule().stroke(whatsappGreen.opacity(0.28), lineWidth: 0.5))
+                        .padding(.vertical, 1.5)
+                        .background(whatsappGreen.opacity(0.20), in: Capsule())
                 }
             }
             .contentShape(Rectangle())
@@ -378,25 +451,25 @@ private struct NotificationCardContentView: View {
                 onCardClick()
             }
 
-            Spacer(minLength: 6)
+            Spacer(minLength: 4)
 
             if showCopiedState {
-                Text("Copied")
-                    .font(.system(size: 11, weight: .medium))
+                Text("Copied ✓")
+                    .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(whatsappGreen)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2)
-                    .background(whatsappGreen.opacity(0.14), in: Capsule())
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1.5)
+                    .background(whatsappGreen.opacity(0.16), in: Capsule())
                     .transition(.opacity)
             } else if config.showTimestamp {
                 Text(message.timestamp ?? "NOW")
-                    .font(.system(size: 11.5, weight: .medium))
+                    .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(mutedText)
             }
 
-            HStack(spacing: 3) {
+            HStack(spacing: 4) {
                 GlassIconActionButton(
-                    systemName: "arrow.up.forward.app",
+                    systemName: "arrow.up.forward.square",
                     tooltip: "Open in WhatsApp",
                     isDark: isDark,
                     action: onOpenWhatsApp
@@ -431,76 +504,25 @@ private struct NotificationCardContentView: View {
         }
     }
 
-    private var senderSection: some View {
-        HStack(alignment: .center, spacing: 11) {
-            if config.showAvatar {
-                avatarView
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                if config.showSender {
-                    Text(displaySender)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(primaryText)
-                        .lineLimit(1)
-                }
-
-                if let contextSubtitle {
-                    Text(contextSubtitle)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(secondaryText)
-                        .lineLimit(1)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    @ViewBuilder
-    private var messageBodySection: some View {
-        if config.showPreview, let text = message.text, !text.isEmpty {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(text)
-                    .font(.system(size: 15.5, weight: .regular))
-                    .lineSpacing(3.0)
-                    .foregroundStyle(messageTextColor)
-                    .lineLimit(isExpanded ? 10 : 5)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if canExpandPreview {
-                    Button(isExpanded ? "Show less" : "Show more") {
-                        isExpanded.toggle()
-                        DispatchQueue.main.async {
-                            onToggleExpand()
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(whatsappGreen.opacity(0.92))
-                }
-            }
-        }
-    }
-
     @ViewBuilder
     private var avatarView: some View {
         if let nsImage = decodeAvatarImage(message.avatar) {
             Image(nsImage: nsImage)
                 .resizable()
                 .scaledToFill()
-                .frame(width: 40, height: 40)
+                .frame(width: 34, height: 34)
                 .clipShape(Circle())
-                .overlay(Circle().stroke(whatsappGreen.opacity(0.32), lineWidth: 1))
+                .overlay(Circle().stroke(whatsappGreen, lineWidth: 1.25))
         } else {
             ZStack {
                 Circle()
-                    .fill(whatsappGreen.opacity(isDark ? 0.16 : 0.14))
+                    .fill(isDark ? Color.black.opacity(0.26) : whatsappGreen.opacity(0.14))
                 Text(initials(from: displaySender))
-                    .font(.system(size: 14.5, weight: .semibold))
-                    .foregroundStyle(isDark ? Color.white.opacity(0.94) : Color(red: 0.04, green: 0.42, blue: 0.22))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(isDark ? .white : Color(red: 0.04, green: 0.42, blue: 0.22))
             }
-            .frame(width: 40, height: 40)
-            .overlay(Circle().stroke(whatsappGreen.opacity(0.30), lineWidth: 1))
+            .frame(width: 34, height: 34)
+            .overlay(Circle().stroke(whatsappGreen, lineWidth: 1.25))
         }
     }
 
@@ -524,9 +546,9 @@ private struct NotificationCardContentView: View {
     }
 }
 
-/// Neutral dark glass "Clear All" pill aligned cleanly with the notification stack.
+/// Compact neutral dark glass "Clear All" pill aligned above/below the notification stack.
 final class ClearAllGlassPillView: NSView {
-    private let backdropView = LiquidGlassBackdropView(cornerRadius: 15)
+    private let backdropView = LiquidGlassBackdropView(cornerRadius: 13, showLeftAccent: false)
     private let hostingView: NSHostingView<ClearAllPillContent>
     private var trackingArea: NSTrackingArea?
     private var latestConfig: HelperConfiguration
@@ -536,10 +558,10 @@ final class ClearAllGlassPillView: NSView {
         self.hostingView = NSHostingView(
             rootView: ClearAllPillContent(totalCount: totalCount, config: config, isHovered: false, onClearAll: onClearAll)
         )
-        super.init(frame: NSRect(x: 0, y: 0, width: 120, height: 30))
+        super.init(frame: NSRect(x: 0, y: 0, width: 96, height: 26))
 
         wantsLayer = true
-        layer?.cornerRadius = 15
+        layer?.cornerRadius = 13
         layer?.masksToBounds = true
         layer?.backgroundColor = NSColor.clear.cgColor
 
@@ -622,7 +644,7 @@ final class ClearAllGlassPillView: NSView {
     func preferredSize() -> CGSize {
         hostingView.layoutSubtreeIfNeeded()
         let fitting = hostingView.fittingSize
-        return CGSize(width: max(98, ceil(fitting.width)), height: 30)
+        return CGSize(width: max(86, ceil(fitting.width)), height: 26)
     }
 }
 
@@ -638,15 +660,15 @@ private struct ClearAllPillContent: View {
     var body: some View {
         Button(action: onClearAll) {
             HStack(spacing: 5) {
-                Image(systemName: "xmark.circle")
-                    .font(.system(size: 11.5, weight: .medium))
+                Image(systemName: "square.3.layers.3d")
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(isHovered ? whatsappGreen : textColor)
                 Text(totalCount > 1 ? "Clear All (\(totalCount))" : "Clear All")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(textColor)
             }
-            .padding(.horizontal, 12)
-            .frame(height: 30)
+            .padding(.horizontal, 11)
+            .frame(height: 26)
             .background(
                 Capsule()
                     .fill(isHovered ? whatsappGreen.opacity(0.14) : Color.clear)
@@ -663,8 +685,8 @@ private struct ClearAllPillContent: View {
 
     private var textColor: Color {
         if isDark {
-            return Color.white.opacity(isHovered ? 0.96 : 0.82)
+            return Color.white.opacity(isHovered ? 1.0 : 0.90)
         }
-        return Color(red: 0.08, green: 0.11, blue: 0.17).opacity(isHovered ? 0.96 : 0.80)
+        return Color(red: 0.08, green: 0.11, blue: 0.17).opacity(isHovered ? 0.96 : 0.85)
     }
 }

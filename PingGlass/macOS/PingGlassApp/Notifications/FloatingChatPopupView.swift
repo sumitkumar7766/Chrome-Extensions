@@ -4,10 +4,10 @@ import SwiftUI
 /// Floating native glass popup displaying the clicked contact's recent chat messages
 /// at the notification screen corner, without stealing focus or requiring app switching.
 final class GlassChatPopupView: NSView {
-    static let popupSize = CGSize(width: 372, height: 430)
-    static let cornerRadius: CGFloat = 24.0
+    static let popupSize = CGSize(width: 318, height: 336)
+    static let cornerRadius: CGFloat = 18.0
 
-    private let backdropView = LiquidGlassBackdropView(cornerRadius: GlassChatPopupView.cornerRadius)
+    private let backdropView = LiquidGlassBackdropView(cornerRadius: GlassChatPopupView.cornerRadius, showLeftAccent: true)
     private let hostingView: NSHostingView<FloatingChatPopupContent>
 
     init(
@@ -174,34 +174,34 @@ private struct FloatingChatPopupContent: View {
     }
 
     private var headerBar: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             ZStack {
                 Circle()
-                    .fill(whatsappGreen.opacity(isDark ? 0.22 : 0.16))
+                    .fill(isDark ? Color.black.opacity(0.26) : whatsappGreen.opacity(0.14))
                 Text(initials(from: chatTitle))
-                    .font(.system(size: 12.5, weight: .bold))
+                    .font(.system(size: 11.5, weight: .semibold))
                     .foregroundStyle(isDark ? .white : Color(red: 0.02, green: 0.45, blue: 0.25))
             }
-            .frame(width: 34, height: 34)
-            .overlay(Circle().stroke(whatsappGreen.opacity(0.38), lineWidth: 1))
+            .frame(width: 30, height: 30)
+            .overlay(Circle().stroke(whatsappGreen, lineWidth: 1.2))
 
             VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 6) {
+                HStack(spacing: 5) {
                     Text(chatTitle)
-                        .font(.system(size: 13.5, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(primaryText)
                         .lineLimit(1)
                     if isTestChat {
                         Text("TEST")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.system(size: 8.5, weight: .bold))
                             .foregroundStyle(whatsappGreen)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
-                            .background(whatsappGreen.opacity(0.16), in: Capsule())
+                            .background(whatsappGreen.opacity(0.20), in: Capsule())
                     }
                 }
 
-                Text(subtitle ?? (isLiveAXSynced ? "Live WhatsApp Accessibility View" : "Session Messages"))
+                Text(subtitle ?? (isLiveAXSynced ? "Live WhatsApp Accessibility" : "Session Messages"))
                     .font(.system(size: 10.5))
                     .foregroundStyle(mutedText)
                     .lineLimit(1)
@@ -225,8 +225,8 @@ private struct FloatingChatPopupContent: View {
                 )
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
     }
 
     private func bubbleRow(_ entry: ChatBubbleEntry) -> some View {
