@@ -97,6 +97,13 @@ struct SettingsView: View {
             }
             .font(.caption)
 
+            Picker("On Card Click", selection: $appState.config.notificationClickAction) {
+                ForEach(NotificationClickAction.allCases, id: \.self) { action in
+                    Text(action.displayName).tag(action)
+                }
+            }
+            .font(.caption)
+
             Stepper(
                 "Max Visible Cards: \(appState.config.maxVisibleNotifications)",
                 value: $appState.config.maxVisibleNotifications,

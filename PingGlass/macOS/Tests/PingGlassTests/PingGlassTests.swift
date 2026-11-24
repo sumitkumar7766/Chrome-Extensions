@@ -316,7 +316,7 @@ final class PingGlassTests: XCTestCase {
         XCTAssertEqual(decoded.ambiguousDirectionPolicy, .forwardLowConfidence)
         XCTAssertEqual(decoded.maxPreviewLength, 240)
         XCTAssertTrue(decoded.globalNotificationsEnabled)
-        XCTAssertEqual(decoded.notificationDurationSeconds, 6)
+        XCTAssertEqual(decoded.notificationDurationSeconds, 0)
         XCTAssertEqual(decoded.maxVisibleNotifications, 3)
         XCTAssertEqual(decoded.notificationPosition, .bottomRight)
         XCTAssertEqual(decoded.edgeMargin, 28.0)
@@ -374,16 +374,121 @@ final class PingGlassTests: XCTestCase {
         }
         XCTAssertEqual(manager.activeWindowCount, 3)
         XCTAssertEqual(manager.queuedCount, 2)
+        XCTAssertTrue(manager.isClearAllBarVisible)
 
         // Dismiss one -> promotes queued #4 immediately
         manager.dismiss(id: "wm-1", animated: false)
         XCTAssertEqual(manager.activeWindowCount, 3)
         XCTAssertEqual(manager.queuedCount, 1)
+        XCTAssertTrue(manager.isClearAllBarVisible)
 
-        // Pause notifications -> dismisses all active windows & clears queue
+        // Clear All -> dismisses all active windows, clears queue, hides Clear All bar
+        manager.dismissAll(animated: false)
+        XCTAssertEqual(manager.activeWindowCount, 0)
+        XCTAssertEqual(manager.queuedCount, 0)
+        XCTAssertFalse(manager.isClearAllBarVisible)
+
+        // Re-enqueue and pause -> clears cleanly
+        manager.enqueue(
+            WhatsAppMessage(id: "wm-6", sender: "Sender 6", text: "Message 6"),
+            config: cfg
+        )
+        XCTAssertEqual(manager.activeWindowCount, 1)
+        XCTAssertTrue(manager.isClearAllBarVisible)
         cfg.pausedIndefinitely = true
         manager.updateConfiguration(cfg)
         XCTAssertEqual(manager.activeWindowCount, 0)
         XCTAssertEqual(manager.queuedCount, 0)
+        XCTAssertFalse(manager.isClearAllBarVisible)
+
+        // Verify ClearAllBarFrame stays strictly inside visibleFrame across all 5 positions
+        let sampleBounds = CGRect(x: 0, y: 40, width: 1440, height: 835)
+        let sampleCards = [CGRect(x: 1062, y: 68, width: 350, height: 100)]
+        for pos in NotificationPosition.allCases {
+            let barFrame = DisplayScreenLocator.computeClearAllBarFrame(
+                for: sampleCards,
+                barSize: CGSize(width: 112, height: 30),
+                in: sampleBounds,
+                position: pos,
+                edgeMargin: 28
+            )
+            XCTAssertTrue(sampleBounds.contains(barFrame))
+            let chatFrame = DisplayScreenLocator.computeChatPopupFrame(
+                size: GlassChatPopupView.popupSize,
+                in: sampleBounds,
+                position: pos,
+                edgeMargin: 28
+            )
+            XCTAssertTrue(sampleBounds.contains(chatFrame))
+        }
+
+        // Verify clicking a notification opens the floating Glass Chat Popup cleanly in place
+        var clickConfig = HelperConfiguration(
+            globalNotificationsEnabled: true,
+            animationEnabled: false,
+            notificationDurationSeconds: 0,
+            notificationClickAction: .openGlassChatPopup
+        )
+        let clickedMsg = WhatsAppMessage(
+            id: "click-1",
+            sender: "Rahul Sharma",
+            chatName: "Rahul Sharma",
+            text: "Bhai kal milte hain",
+            timestamp: "NOW"
+        )
+        manager.enqueue(clickedMsg, config: clickConfig)
+        XCTAssertEqual(manager.activeWindowCount, 1)
+        manager.handleNotificationCardClick(clickedMsg)
+        XCTAssertEqual(manager.activeWindowCount, 0)
+        XCTAssertTrue(manager.isChatPopupVisible)
+        manager.closeChatPopup()
+        XCTAssertFalse(manager.isChatPopupVisible)
+
+        // Verify direct WhatsApp click mode triggers onOpenWhatsAppRequested
+        clickConfig.notificationClickAction = .openWhatsAppDirectly
+        var openRequestedForId: String?
+        manager.onOpenWhatsAppRequested = { msg in
+            openRequestedForId = msg.id
+        }
+        manager.updateConfiguration(clickConfig)
+        manager.enqueue(clickedMsg, config: clickConfig)
+        manager.handleNotificationCardClick(clickedMsg)
+        XCTAssertEqual(openRequestedForId, "click-1")
+    }
+
+    func testSidebarRowMatchAndSessionChatStore() {
+        let extractor = AccessibilityExtractor()
+        let rahulRow = AXNodeSnapshot(
+            role: "AXRow",
+            identifier: "row-rahul",
+            children: [
+                AXNodeSnapshot(role: "AXStaticText", value: "Rahul Sharma"),
+                AXNodeSnapshot(role: "AXStaticText", value: "Bhai kal milte hain"),
+            ]
+        )
+        let nehaRow = AXNodeSnapshot(
+            role: "AXRow",
+            identifier: "row-neha",
+            children: [
+                AXNodeSnapshot(role: "AXStaticText", value: "Neha"),
+                AXNodeSnapshot(role: "AXStaticText", value: "Hello"),
+            ]
+        )
+        let window = AXNodeSnapshot(
+            role: "AXWindow",
+            title: "WhatsApp",
+            children: [AXNodeSnapshot(role: "AXTable", children: [nehaRow, rahulRow])]
+        )
+        let matched = extractor.findMatchingSidebarRow(in: window, targetChatTitle: "rahul sharma")
+        XCTAssertEqual(matched?.identifier, "row-rahul")
+
+        let store = SessionChatStore(maxChats: 5, maxMessagesPerChat: 10)
+        let m1 = WhatsAppMessage(id: "c1", sender: "Rahul Sharma", chatName: "Rahul Sharma", text: "One", timestamp: "10:00")
+        let m2 = WhatsAppMessage(id: "c2", sender: "Rahul Sharma", chatName: "Rahul Sharma", text: "Two", timestamp: "10:01")
+        store.record(m1)
+        store.record(m2)
+        XCTAssertEqual(store.messages(for: m1).map(\.text), ["One", "Two"])
+        store.clearAll()
+        XCTAssertEqual(store.messages(for: m1).count, 0)
     }
 }

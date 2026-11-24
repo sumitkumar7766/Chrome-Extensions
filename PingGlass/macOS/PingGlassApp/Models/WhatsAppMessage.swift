@@ -156,6 +156,21 @@ public enum GlassAppearanceMode: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// Behavior when clicking the body of a floating glass notification card.
+public enum NotificationClickAction: String, Codable, CaseIterable, Sendable {
+    case openGlassChatPopup = "open_glass_chat_popup"
+    case openWhatsAppDirectly = "open_whatsapp_directly"
+
+    public var displayName: String {
+        switch self {
+        case .openGlassChatPopup:
+            return "Open Floating Glass Chat Popup"
+        case .openWhatsAppDirectly:
+            return "Open Chat in WhatsApp Desktop"
+        }
+    }
+}
+
 /// Supported auto-dismiss durations in seconds (`0` = Never auto-dismiss).
 public enum NotificationDurationOption: Int, Codable, CaseIterable, Sendable {
     case threeSeconds = 3
@@ -167,7 +182,7 @@ public enum NotificationDurationOption: Int, Codable, CaseIterable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .never: return "Never"
+        case .never: return "Until closed (Never)"
         default: return "\(rawValue) seconds"
         }
     }
@@ -193,6 +208,7 @@ public struct HelperConfiguration: Codable, Sendable, Equatable {
     public var edgeMargin: Double
     public var preferredDisplayMode: PreferredDisplayMode
     public var appearanceMode: GlassAppearanceMode
+    public var notificationClickAction: NotificationClickAction
 
     // Card Content & Audio
     public var showAvatar: Bool
@@ -216,12 +232,13 @@ public struct HelperConfiguration: Codable, Sendable, Equatable {
         chromeForwardingEnabled: Bool = true,
         animationEnabled: Bool = true,
         nativeGlassBlurEnabled: Bool = true,
-        notificationDurationSeconds: Int = 6,
+        notificationDurationSeconds: Int = 0,
         maxVisibleNotifications: Int = 3,
         notificationPosition: NotificationPosition = .bottomRight,
         edgeMargin: Double = 28.0,
         preferredDisplayMode: PreferredDisplayMode = .activeDisplay,
         appearanceMode: GlassAppearanceMode = .dark,
+        notificationClickAction: NotificationClickAction = .openGlassChatPopup,
         showAvatar: Bool = true,
         showSender: Bool = true,
         showChatName: Bool = true,
@@ -246,6 +263,7 @@ public struct HelperConfiguration: Codable, Sendable, Equatable {
         self.edgeMargin = max(12.0, min(64.0, edgeMargin))
         self.preferredDisplayMode = preferredDisplayMode
         self.appearanceMode = appearanceMode
+        self.notificationClickAction = notificationClickAction
         self.showAvatar = showAvatar
         self.showSender = showSender
         self.showChatName = showChatName
@@ -282,6 +300,7 @@ public struct HelperConfiguration: Codable, Sendable, Equatable {
         case edgeMargin
         case preferredDisplayMode
         case appearanceMode
+        case notificationClickAction
         case showAvatar
         case showSender
         case showChatName
@@ -304,12 +323,13 @@ public struct HelperConfiguration: Codable, Sendable, Equatable {
             chromeForwardingEnabled: try c.decodeIfPresent(Bool.self, forKey: .chromeForwardingEnabled) ?? true,
             animationEnabled: try c.decodeIfPresent(Bool.self, forKey: .animationEnabled) ?? true,
             nativeGlassBlurEnabled: try c.decodeIfPresent(Bool.self, forKey: .nativeGlassBlurEnabled) ?? true,
-            notificationDurationSeconds: try c.decodeIfPresent(Int.self, forKey: .notificationDurationSeconds) ?? 6,
+            notificationDurationSeconds: try c.decodeIfPresent(Int.self, forKey: .notificationDurationSeconds) ?? 0,
             maxVisibleNotifications: try c.decodeIfPresent(Int.self, forKey: .maxVisibleNotifications) ?? 3,
             notificationPosition: try c.decodeIfPresent(NotificationPosition.self, forKey: .notificationPosition) ?? .bottomRight,
             edgeMargin: try c.decodeIfPresent(Double.self, forKey: .edgeMargin) ?? 28.0,
             preferredDisplayMode: try c.decodeIfPresent(PreferredDisplayMode.self, forKey: .preferredDisplayMode) ?? .activeDisplay,
             appearanceMode: try c.decodeIfPresent(GlassAppearanceMode.self, forKey: .appearanceMode) ?? .dark,
+            notificationClickAction: try c.decodeIfPresent(NotificationClickAction.self, forKey: .notificationClickAction) ?? .openGlassChatPopup,
             showAvatar: try c.decodeIfPresent(Bool.self, forKey: .showAvatar) ?? true,
             showSender: try c.decodeIfPresent(Bool.self, forKey: .showSender) ?? true,
             showChatName: try c.decodeIfPresent(Bool.self, forKey: .showChatName) ?? true,

@@ -38,6 +38,7 @@ ALLOWED_INBOUND_FROM_CHROME = {
     "pause_monitoring",
     "settings_update",
     "test_notification",
+    "clear_all_notifications",
     "launch_helper",
 }
 

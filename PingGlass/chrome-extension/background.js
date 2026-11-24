@@ -21,7 +21,7 @@ const RECONNECT_DELAYS_MS = [2000, 4000, 8000, 16000, 30000];
 const DEFAULT_SETTINGS = Object.freeze({
   notificationsEnabled: true,
   monitoringEnabled: false,
-  autoDismissSeconds: 6,
+  autoDismissSeconds: 0,
   maxVisible: 3,
   showSender: true,
   showChatName: true,
@@ -68,8 +68,17 @@ function isExtensionContextValid() {
 
 async function getSettings() {
   try {
-    const stored = await chrome.storage.local.get(SETTINGS_KEY);
-    return { ...DEFAULT_SETTINGS, ...(stored[SETTINGS_KEY] || {}) };
+    const stored = await chrome.storage.local.get([SETTINGS_KEY, "pingglass_persistent_default_v2"]);
+    const base = { ...DEFAULT_SETTINGS, ...(stored[SETTINGS_KEY] || {}) };
+    if (!stored.pingglass_persistent_default_v2) {
+      if (stored[SETTINGS_KEY] && stored[SETTINGS_KEY].autoDismissSeconds === 6) {
+        base.autoDismissSeconds = 0;
+        await chrome.storage.local.set({ [SETTINGS_KEY]: base, pingglass_persistent_default_v2: true });
+      } else {
+        await chrome.storage.local.set({ pingglass_persistent_default_v2: true });
+      }
+    }
+    return base;
   } catch {
     return { ...DEFAULT_SETTINGS };
   }
@@ -668,6 +677,22 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         case "popup_disable_overlay": {
           const res = await disableOverlayOnTab(request.tabId);
           sendResponse(res);
+          break;
+        }
+
+        case "popup_clear_all": {
+          const session = await getSessionState();
+          for (const tabId of session.enabledTabIds) {
+            try {
+              await chrome.tabs.sendMessage(tabId, { type: "pingglass_clear_all" });
+            } catch {
+              // Ignore dead/navigated tab.
+            }
+          }
+          if (nativePort) {
+            sendToNativePort({ type: "clear_all_notifications" });
+          }
+          sendResponse({ ok: true });
           break;
         }
 

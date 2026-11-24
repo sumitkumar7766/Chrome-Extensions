@@ -38,7 +38,7 @@
 
   let settings = {
     notificationsEnabled: true,
-    autoDismissSeconds: 6,
+    autoDismissSeconds: 0,
     maxVisible: 3,
     showSender: true,
     showChatName: true,
@@ -56,6 +56,8 @@
   let hostElement = null;
   let shadowRoot = null;
   let stackContainer = null;
+  let clearAllBar = null;
+  let clearAllBtn = null;
   let stylesLoaded = false;
 
   const activeCards = new Map(); // id -> record
@@ -126,7 +128,50 @@
     hostElement = null;
     shadowRoot = null;
     stackContainer = null;
+    clearAllBar = null;
+    clearAllBtn = null;
     stylesLoaded = false;
+  }
+
+  function updateClearAllBar() {
+    if (!stackContainer) return;
+    const totalCount = activeCards.size + pendingQueue.length;
+    if (totalCount <= 0) {
+      if (clearAllBar && clearAllBar.parentNode) {
+        clearAllBar.parentNode.removeChild(clearAllBar);
+      }
+      clearAllBar = null;
+      clearAllBtn = null;
+      return;
+    }
+
+    if (!clearAllBar) {
+      clearAllBar = document.createElement("div");
+      clearAllBar.className = "pg-clear-all-bar";
+      clearAllBtn = document.createElement("button");
+      clearAllBtn.type = "button";
+      clearAllBtn.className = "pg-clear-all-btn";
+      clearAllBtn.setAttribute("aria-label", "Clear all notifications");
+      clearAllBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        clearAllNotifications();
+      });
+      clearAllBar.appendChild(clearAllBtn);
+      stackContainer.prepend(clearAllBar);
+    }
+
+    if (clearAllBtn) {
+      clearAllBtn.textContent = totalCount > 1 ? `Clear All (${totalCount})` : "Clear All";
+    }
+  }
+
+  function clearAllNotifications() {
+    pendingQueue.length = 0;
+    const ids = Array.from(activeCards.keys());
+    for (const id of ids) {
+      dismissCard(id);
+    }
+    updateClearAllBar();
   }
 
   /* -------------------------------------------------------------------------- */
@@ -469,6 +514,7 @@
       }
       activeCards.delete(id);
       drainQueue();
+      updateClearAllBar();
     };
 
     const animationsOn = stackContainer?.dataset.animations === "on";
@@ -493,6 +539,7 @@
     const maxVisible = Math.max(1, Math.min(6, Number(settings.maxVisible) || 3));
     if (activeCards.size >= maxVisible) {
       pendingQueue.push(message);
+      updateClearAllBar();
       return;
     }
 
@@ -503,7 +550,8 @@
     if (!stackContainer) return;
 
     const card = buildNotificationCard(message);
-    const durationMs = Math.max(1500, (Number(settings.autoDismissSeconds) || 6) * 1000);
+    const rawSec = Number(settings.autoDismissSeconds);
+    const durationMs = Number.isFinite(rawSec) && rawSec > 0 ? Math.max(1500, rawSec * 1000) : 0;
     const record = {
       id: message.id,
       element: card,
@@ -526,6 +574,7 @@
     stackContainer.appendChild(card);
 
     scheduleAutoDismiss(record);
+    updateClearAllBar();
     playSubtleChime();
   }
 
@@ -582,6 +631,11 @@
 
         case "pingglass_cleanup":
           cleanupOverlay();
+          sendResponse({ ok: true });
+          return false;
+
+        case "pingglass_clear_all":
+          clearAllNotifications();
           sendResponse({ ok: true });
           return false;
 

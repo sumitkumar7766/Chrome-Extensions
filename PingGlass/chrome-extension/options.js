@@ -21,7 +21,7 @@
   const DEFAULTS = {
     notificationsEnabled: true,
     monitoringEnabled: false,
-    autoDismissSeconds: 6,
+    autoDismissSeconds: 0,
     maxVisible: 3,
     showSender: true,
     showChatName: true,

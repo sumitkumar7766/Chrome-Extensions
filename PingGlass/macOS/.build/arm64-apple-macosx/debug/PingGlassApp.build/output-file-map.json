@@ -65,6 +65,13 @@
     "swift-dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/DisplayScreenLocator.swiftdeps",
     "diagnostics": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/DisplayScreenLocator.dia"
   },
+  "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingChatPopupView.swift": {
+    "dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingChatPopupView.d",
+    "object": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingChatPopupView.swift.o",
+    "swiftmodule": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingChatPopupView~partial.swiftmodule",
+    "swift-dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingChatPopupView.swiftdeps",
+    "diagnostics": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingChatPopupView.dia"
+  },
   "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingNotificationPanel.swift": {
     "dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingNotificationPanel.d",
     "object": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingNotificationPanel.swift.o",
@@ -92,6 +99,13 @@
     "swiftmodule": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NotificationStackQueue~partial.swiftmodule",
     "swift-dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NotificationStackQueue.swiftdeps",
     "diagnostics": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NotificationStackQueue.dia"
+  },
+  "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/SessionChatStore.swift": {
+    "dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/SessionChatStore.d",
+    "object": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/SessionChatStore.swift.o",
+    "swiftmodule": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/SessionChatStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/SessionChatStore.swiftdeps",
+    "diagnostics": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/SessionChatStore.dia"
   },
   "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PermissionManager.swift": {
     "dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/PermissionManager.d",

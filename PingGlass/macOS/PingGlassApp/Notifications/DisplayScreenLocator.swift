@@ -118,4 +118,80 @@ public enum DisplayScreenLocator {
 
         return frames
     }
+
+    /// Computes the frame for the floating "Clear All" pill adjacent to the active card stack.
+    public static func computeClearAllBarFrame(
+        for cardFrames: [CGRect],
+        barSize: CGSize,
+        in visibleFrame: CGRect,
+        position: NotificationPosition,
+        edgeMargin: CGFloat,
+        spacing: CGFloat = 8.0
+    ) -> CGRect {
+        let safeInset: CGFloat = 8.0
+        let safeMargin = max(8.0, min(64.0, edgeMargin))
+
+        let rawX: CGFloat
+        if position.isRightAligned {
+            let anchorMaxX = cardFrames.first?.maxX ?? (visibleFrame.maxX - safeMargin)
+            rawX = anchorMaxX - barSize.width
+        } else {
+            let anchorMinX = cardFrames.first?.minX ?? (visibleFrame.minX + safeMargin)
+            rawX = anchorMinX
+        }
+        let minAllowedX = visibleFrame.minX + safeInset
+        let maxAllowedX = max(minAllowedX, visibleFrame.maxX - barSize.width - safeInset)
+        let clampedX = min(max(rawX, minAllowedX), maxAllowedX)
+
+        let rawY: CGFloat
+        switch position {
+        case .bottomRight, .bottomLeft, .centerRight:
+            let highestMaxY = cardFrames.map(\.maxY).max() ?? (visibleFrame.minY + safeMargin)
+            rawY = highestMaxY + spacing
+        case .topRight, .topLeft:
+            let lowestMinY = cardFrames.map(\.minY).min() ?? (visibleFrame.maxY - safeMargin)
+            rawY = lowestMinY - spacing - barSize.height
+        }
+
+        let minAllowedY = visibleFrame.minY + safeInset
+        let maxAllowedY = max(minAllowedY, visibleFrame.maxY - barSize.height - safeInset)
+        let clampedY = min(max(rawY, minAllowedY), maxAllowedY)
+
+        return CGRect(origin: CGPoint(x: clampedX, y: clampedY), size: barSize)
+    }
+
+    /// Computes a clamped frame for the floating glass chat popup at the configured screen corner.
+    public static func computeChatPopupFrame(
+        size: CGSize,
+        in visibleFrame: CGRect,
+        position: NotificationPosition,
+        edgeMargin: CGFloat
+    ) -> CGRect {
+        let safeInset: CGFloat = 8.0
+        let safeMargin = max(8.0, min(64.0, edgeMargin))
+        let width = min(size.width, max(240, visibleFrame.width - safeInset * 2))
+        let height = min(size.height, max(240, visibleFrame.height - safeInset * 2))
+
+        let rawX: CGFloat = position.isRightAligned
+            ? visibleFrame.maxX - safeMargin - width
+            : visibleFrame.minX + safeMargin
+        let minAllowedX = visibleFrame.minX + safeInset
+        let maxAllowedX = max(minAllowedX, visibleFrame.maxX - width - safeInset)
+        let clampedX = min(max(rawX, minAllowedX), maxAllowedX)
+
+        let rawY: CGFloat
+        switch position {
+        case .bottomRight, .bottomLeft:
+            rawY = visibleFrame.minY + safeMargin
+        case .topRight, .topLeft:
+            rawY = visibleFrame.maxY - safeMargin - height
+        case .centerRight:
+            rawY = visibleFrame.midY - height / 2.0
+        }
+        let minAllowedY = visibleFrame.minY + safeInset
+        let maxAllowedY = max(minAllowedY, visibleFrame.maxY - height - safeInset)
+        let clampedY = min(max(rawY, minAllowedY), maxAllowedY)
+
+        return CGRect(x: clampedX, y: clampedY, width: width, height: height)
+    }
 }

@@ -64,6 +64,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingChatPopupView.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingNotificationPanel.swift"
         },
         {
@@ -77,6 +81,10 @@
         {
           "kind" : "file",
           "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/NotificationStackQueue.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/SessionChatStore.swift"
         },
         {
           "kind" : "file",
@@ -120,10 +128,12 @@
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/WhatsAppMessage.swift.o",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/NativeMessagingClient.swift.o",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/DisplayScreenLocator.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/FloatingChatPopupView.swift.o",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/FloatingNotificationPanel.swift.o",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/GlassNotificationCardView.swift.o",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/GlobalNotificationWindowManager.swift.o",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/NotificationStackQueue.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/SessionChatStore.swift.o",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/PermissionManager.swift.o",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/PingGlassApp.swift.o",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/SettingsView.swift.o",
@@ -223,6 +233,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/FloatingChatPopupView.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/FloatingNotificationPanel.swift.o"
         },
         {
@@ -236,6 +250,10 @@
         {
           "kind" : "file",
           "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/NotificationStackQueue.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/SessionChatStore.swift.o"
         },
         {
           "kind" : "file",
@@ -273,10 +291,12 @@
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Models/WhatsAppMessage.swift",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/NativeMessagingClient.swift",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/DisplayScreenLocator.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingChatPopupView.swift",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingNotificationPanel.swift",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlassNotificationCardView.swift",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlobalNotificationWindowManager.swift",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/NotificationStackQueue.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/SessionChatStore.swift",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PermissionManager.swift",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PingGlassApp.swift",
         "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/SettingsView.swift",
@@ -508,10 +528,12 @@
       "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Models/WhatsAppMessage.swift",
       "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/NativeMessagingClient.swift",
       "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/DisplayScreenLocator.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingChatPopupView.swift",
       "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingNotificationPanel.swift",
       "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlassNotificationCardView.swift",
       "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlobalNotificationWindowManager.swift",
       "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/NotificationStackQueue.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/SessionChatStore.swift",
       "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PermissionManager.swift",
       "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PingGlassApp.swift",
       "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/SettingsView.swift",
@@ -764,6 +786,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/FloatingChatPopupView.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/FloatingNotificationPanel.swift.o"
         },
         {
@@ -801,6 +827,10 @@
         {
           "kind" : "file",
           "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/PingGlassApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/SessionChatStore.swift.o"
         },
         {
           "kind" : "file",
@@ -866,6 +896,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingChatPopupView.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingNotificationPanel.swift"
         },
         {
@@ -879,6 +913,10 @@
         {
           "kind" : "file",
           "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/NotificationStackQueue.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/SessionChatStore.swift"
         },
         {
           "kind" : "file",
@@ -942,6 +980,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/FloatingChatPopupView.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/FloatingNotificationPanel.swift.o"
         },
         {
@@ -979,6 +1021,10 @@
         {
           "kind" : "file",
           "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/PingGlassApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassApp.build/SessionChatStore.swift.o"
         },
         {
           "kind" : "file",

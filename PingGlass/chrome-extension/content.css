@@ -28,6 +28,52 @@
   flex-direction: column-reverse;
 }
 
+.pg-clear-all-bar {
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.pg-clear-all-btn {
+  appearance: none;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #f8fafc;
+  background: rgba(17, 22, 32, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.pg-clear-all-btn:hover {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.pg-stack[data-theme="light"] .pg-clear-all-btn {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(15, 23, 42, 0.14);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.pg-stack[data-theme="light"] .pg-clear-all-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.42);
+  color: #b91c1c;
+}
+
 .pg-card {
   position: relative;
   pointer-events: auto;

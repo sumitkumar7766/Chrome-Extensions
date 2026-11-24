@@ -10,6 +10,7 @@ import os
 final class AppState: ObservableObject {
     private static let logger = Logger(subsystem: "com.pingglass.app", category: "coordinator")
     private static let defaultsKey = "pingglass.helper.config.v1"
+    private static let persistentDefaultMigrationKey = "pingglass.helper.persistentDurationMigrated.v1"
 
     @Published private(set) var lifecycleState: MonitoringLifecycleState = .whatsappNotRunning
     @Published private(set) var statusDetail: String = "Launch official WhatsApp Desktop to begin."
@@ -18,6 +19,8 @@ final class AppState: ObservableObject {
     @Published private(set) var fallbackPollingActive: Bool = false
     @Published private(set) var connectedBridgeClients: Int = 0
     @Published private(set) var sessionMessagesForwarded: Int = 0
+    @Published private(set) var visibleNotificationCount: Int = 0
+    @Published private(set) var queuedNotificationCount: Int = 0
     @Published private(set) var ipcServerError: String?
     @Published var config: HelperConfiguration {
         didSet {
@@ -36,6 +39,7 @@ final class AppState: ObservableObject {
     let notificationManager: GlobalNotificationWindowManager
 
     private let accessibilityMonitor: AccessibilityMonitor
+    private let chatExtractor = AccessibilityExtractor()
     private let ipcServer: NativeMessagingServer
     private var cancellables: Set<AnyCancellable> = []
     private var pauseExpirationTimer: Timer?
@@ -119,6 +123,14 @@ final class AppState: ObservableObject {
         config = updated
     }
 
+    func clearAllNotifications() {
+        notificationManager.dismissAll(animated: config.animationEnabled)
+    }
+
+    var totalActiveAndQueuedNotifications: Int {
+        visibleNotificationCount + queuedNotificationCount
+    }
+
     var isNotificationsPaused: Bool {
         config.isNotificationsPaused()
     }
@@ -153,7 +165,7 @@ final class AppState: ObservableObject {
         let testMessage = WhatsAppMessage(
             id: "test-\(UUID().uuidString)",
             sender: "PingGlass Test",
-            chatName: "Global Notification",
+            chatName: "Preview notification",
             text: "Your global glass notification is working beautifully! ✨",
             timestamp: timeLabel,
             avatar: nil,
@@ -171,11 +183,19 @@ final class AppState: ObservableObject {
         Self.logger.info("Displayed test global glass notification.")
     }
 
-    /// Explicitly opens/activates official WhatsApp Desktop when requested by user click.
-    func openWhatsAppDesktop(for _: WhatsAppMessage? = nil) {
+    /// Explicitly opens/activates official WhatsApp Desktop and selects the target chat via Accessibility when accessible.
+    func openWhatsAppDesktop(for message: WhatsAppMessage? = nil) {
+        let targetTitle = (message?.isTest == false) ? (message?.chatName ?? message?.sender) : nil
+
         for bundleId in WhatsAppDetector.supportedBundleIdentifiers {
             if let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first(where: { !$0.isTerminated }) {
                 running.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+                if let targetTitle, !targetTitle.isEmpty, permissionManager.isAccessibilityGranted {
+                    let pid = running.processIdentifier
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                        _ = self?.chatExtractor.focusChat(named: targetTitle, inPID: pid)
+                    }
+                }
                 return
             }
         }
@@ -187,7 +207,16 @@ final class AppState: ObservableObject {
         if let appURL = candidates.first(where: { FileManager.default.fileExists(atPath: $0.path) }) {
             let openConfig = NSWorkspace.OpenConfiguration()
             openConfig.activates = true
-            NSWorkspace.shared.openApplication(at: appURL, configuration: openConfig, completionHandler: nil)
+            NSWorkspace.shared.openApplication(at: appURL, configuration: openConfig) { [weak self] app, _ in
+                guard let app, let targetTitle, !targetTitle.isEmpty else { return }
+                let pid = app.processIdentifier
+                Task { @MainActor [weak self] in
+                    guard let self, self.permissionManager.isAccessibilityGranted else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+                        _ = self?.chatExtractor.focusChat(named: targetTitle, inPID: pid)
+                    }
+                }
+            }
         }
     }
 
@@ -216,6 +245,22 @@ final class AppState: ObservableObject {
     private func wireCallbacks() {
         notificationManager.onOpenWhatsAppRequested = { [weak self] message in
             self?.openWhatsAppDesktop(for: message)
+        }
+
+        notificationManager.onFetchLiveConversation = { [weak self] message in
+            guard let self,
+                  !message.isTest,
+                  self.permissionManager.isAccessibilityGranted,
+                  let proc = self.whatsappDetector.currentProcess,
+                  let target = message.chatName ?? message.sender else {
+                return []
+            }
+            return self.chatExtractor.extractVisibleConversation(forChatTitle: target, fromPID: proc.pid)
+        }
+
+        notificationManager.onCountsChanged = { [weak self] activeCount, queuedCount in
+            self?.visibleNotificationCount = activeCount
+            self?.queuedNotificationCount = queuedCount
         }
 
         whatsappDetector.onProcessChanged = { [weak self] _ in
@@ -404,6 +449,8 @@ final class AppState: ObservableObject {
             stopMonitoring()
         case "test_notification":
             sendTestNotification()
+        case "clear_all_notifications":
+            clearAllNotifications()
         case "settings_update":
             guard let payload = envelope.settings else { return }
             var updated = config
@@ -453,8 +500,21 @@ final class AppState: ObservableObject {
 
     private static func loadConfiguration() -> HelperConfiguration {
         guard let data = UserDefaults.standard.data(forKey: defaultsKey),
-              let decoded = try? JSONDecoder().decode(HelperConfiguration.self, from: data) else {
+              var decoded = try? JSONDecoder().decode(HelperConfiguration.self, from: data) else {
+            UserDefaults.standard.set(true, forKey: persistentDefaultMigrationKey)
             return HelperConfiguration()
+        }
+
+        // One-time migration: switch default 6s auto-dismiss to persistent (0 = Never)
+        // so notifications remain on screen until closed by the user.
+        if !UserDefaults.standard.bool(forKey: persistentDefaultMigrationKey) {
+            if decoded.notificationDurationSeconds == 6 {
+                decoded.notificationDurationSeconds = 0
+                if let encoded = try? JSONEncoder().encode(decoded) {
+                    UserDefaults.standard.set(encoded, forKey: defaultsKey)
+                }
+            }
+            UserDefaults.standard.set(true, forKey: persistentDefaultMigrationKey)
         }
         return decoded
     }

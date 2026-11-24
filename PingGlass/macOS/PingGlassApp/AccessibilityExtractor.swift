@@ -98,13 +98,189 @@ public final class AccessibilityExtractor: @unchecked Sendable {
             allCandidates.append(contentsOf: windowCandidates)
         }
 
-        let modeSummary = modes.isEmpty ? "AX tree scanned (no new message markers)" : modes.sorted().joined(separator: " + ")
+        let modeSummary = modes.isEmpty ? "AX Active (Watching)" : modes.sorted().joined(separator: " + ")
         return ExtractionPassResult(
             candidates: allCandidates,
             accessibleWindowCount: windows.count,
             visitedNodeCount: totalVisited,
             extractionMode: modeSummary
         )
+    }
+
+    /// Attempts to open/select a specific conversation row in WhatsApp Desktop using public AX actions.
+    /// Returns true only if a matching accessible element accepted `AXPress` or `AXSelected`.
+    public func focusChat(named targetChatTitle: String, inPID pid: pid_t) -> Bool {
+        let normalizedTarget = Self.normalizeChatLabel(targetChatTitle)
+        guard !normalizedTarget.isEmpty, AXIsProcessTrusted() else { return false }
+
+        let appElement = AXUIElementCreateApplication(pid)
+        var windowsRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+              let windows = windowsRef as? [AXUIElement],
+              !windows.isEmpty else {
+            return false
+        }
+
+        var exactMatch: AXUIElement?
+        var prefixMatch: AXUIElement?
+        var remainingBudget = 450
+
+        func scanLiveNode(_ element: AXUIElement, depth: Int) {
+            guard depth <= 8, remainingBudget > 0, exactMatch == nil else { return }
+            remainingBudget -= 1
+
+            let role = copyStringAttribute(element, kAXRoleAttribute) ?? ""
+            if role == "AXRow" || role == "AXCell" || role == "AXGroup" {
+                let candidateText = [
+                    copyStringAttribute(element, kAXTitleAttribute),
+                    copyStringAttribute(element, kAXDescriptionAttribute),
+                    copyValueAsString(element),
+                ]
+                .compactMap { $0 }
+                .joined(separator: " ")
+
+                let rowTexts = collectLiveTextLeaves(element: element, maxSubnodes: 12) + [candidateText]
+                for raw in rowTexts {
+                    let norm = Self.normalizeChatLabel(raw)
+                    guard !norm.isEmpty else { continue }
+                    if norm == normalizedTarget {
+                        exactMatch = element
+                        return
+                    }
+                    if prefixMatch == nil && (norm.hasPrefix(normalizedTarget) || norm.contains(normalizedTarget)) {
+                        prefixMatch = element
+                    }
+                }
+            }
+
+            var childrenRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &childrenRef) == .success,
+               let children = childrenRef as? [AXUIElement] {
+                for child in children {
+                    if remainingBudget <= 0 || exactMatch != nil { break }
+                    scanLiveNode(child, depth: depth + 1)
+                }
+            }
+        }
+
+        for window in windows.prefix(2) {
+            scanLiveNode(window, depth: 0)
+            if exactMatch != nil { break }
+        }
+
+        guard let targetElement = exactMatch ?? prefixMatch else {
+            return false
+        }
+
+        if AXUIElementPerformAction(targetElement, kAXPressAction as CFString) == .success {
+            return true
+        }
+        if AXUIElementSetAttributeValue(targetElement, kAXSelectedAttribute as CFString, kCFBooleanTrue) == .success {
+            return true
+        }
+        return false
+    }
+
+    /// Reads visible incoming/outgoing bubbles for `targetChatTitle` ONLY when the open WhatsApp chat
+    /// window header matches `targetChatTitle` (preventing cross-chat leakage).
+    public func extractVisibleConversation(forChatTitle targetChatTitle: String, fromPID pid: pid_t) -> [ChatBubbleEntry] {
+        let normalizedTarget = Self.normalizeChatLabel(targetChatTitle)
+        guard !normalizedTarget.isEmpty, AXIsProcessTrusted() else { return [] }
+
+        let appElement = AXUIElementCreateApplication(pid)
+        var windowsRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+              let windows = windowsRef as? [AXUIElement],
+              !windows.isEmpty else {
+            return []
+        }
+
+        for window in windows.prefix(2) {
+            var remainingBudget = limits.maxNodes
+            let snapshot = captureSnapshot(element: window, depth: 0, remainingBudget: &remainingBudget)
+            guard let activeTitle = inferWindowChatTitle(snapshot),
+                  Self.normalizeChatLabel(activeTitle) == normalizedTarget else {
+                continue
+            }
+
+            let bubbles = extractActiveChatBubbles(in: snapshot, activeChatTitle: activeTitle)
+            if !bubbles.isEmpty {
+                return bubbles.enumerated().compactMap { idx, item in
+                    guard let text = item.text, !text.isEmpty else { return nil }
+                    return ChatBubbleEntry(
+                        id: "ax-\(idx)-\(item.elementIdentity ?? "")-\(text.hashValue)",
+                        sender: item.sender,
+                        text: text,
+                        timestamp: item.timestamp,
+                        isOutgoing: item.direction == .outgoing,
+                        isTest: false
+                    )
+                }
+            }
+        }
+
+        return []
+    }
+
+    /// Pure-Swift helper for unit testing chat row matching in sidebar snapshots.
+    public func findMatchingSidebarRow(in window: AXNodeSnapshot, targetChatTitle: String) -> AXNodeSnapshot? {
+        let normalizedTarget = Self.normalizeChatLabel(targetChatTitle)
+        guard !normalizedTarget.isEmpty else { return nil }
+
+        var rows: [AXNodeSnapshot] = []
+        collectNodes(in: window, matching: { $0.role == "AXRow" || $0.role == "AXCell" }, into: &rows)
+
+        var fallbackMatch: AXNodeSnapshot?
+        for row in rows {
+            let texts = collectTextLeaves(in: row) + [row.title, row.descriptionText, row.value].compactMap { $0 }
+            for raw in texts {
+                let norm = Self.normalizeChatLabel(raw)
+                guard !norm.isEmpty else { continue }
+                if norm == normalizedTarget {
+                    return row
+                }
+                if fallbackMatch == nil && (norm.hasPrefix(normalizedTarget) || norm.contains(normalizedTarget)) {
+                    fallbackMatch = row
+                }
+            }
+        }
+        return fallbackMatch
+    }
+
+    private static func normalizeChatLabel(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .lowercased()
+    }
+
+    private func collectLiveTextLeaves(element: AXUIElement, maxSubnodes: Int) -> [String] {
+        var output: [String] = []
+        var remaining = maxSubnodes
+
+        func walk(_ node: AXUIElement, depth: Int) {
+            guard depth <= 4, remaining > 0 else { return }
+            remaining -= 1
+            let role = copyStringAttribute(node, kAXRoleAttribute) ?? ""
+            if role == "AXStaticText" || role == "AXHeading" {
+                if let text = copyValueAsString(node) ?? copyStringAttribute(node, kAXTitleAttribute) {
+                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty {
+                        output.append(trimmed)
+                    }
+                }
+            }
+            var childrenRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(node, kAXChildrenAttribute as CFString, &childrenRef) == .success,
+               let children = childrenRef as? [AXUIElement] {
+                for child in children {
+                    if remaining <= 0 { break }
+                    walk(child, depth: depth + 1)
+                }
+            }
+        }
+        walk(element, depth: 0)
+        return output
     }
 
     /// Pure-Swift extraction entrypoint over a window `AXNodeSnapshot` (also used directly in unit tests).

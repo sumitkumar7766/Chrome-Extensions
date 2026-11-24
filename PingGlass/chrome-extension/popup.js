@@ -22,6 +22,7 @@
     pauseMonitoringBtn: document.getElementById("pause-monitoring-btn"),
     toggleOverlayBtn: document.getElementById("toggle-overlay-btn"),
     testNotificationBtn: document.getElementById("test-notification-btn"),
+    clearAllBtn: document.getElementById("clear-all-btn"),
     openAppBtn: document.getElementById("open-app-btn"),
     settingsBtn: document.getElementById("settings-btn"),
     openSettingsBtn: document.getElementById("open-settings-btn"),
@@ -315,6 +316,13 @@
         showToast("Displayed local test (macOS app offline)");
       }
     });
+
+    if (elements.clearAllBtn) {
+      elements.clearAllBtn.addEventListener("click", async () => {
+        await sendRuntimeMessage({ type: "popup_clear_all" });
+        showToast("Cleared all notifications");
+      });
+    }
 
     elements.openAppBtn.addEventListener("click", async () => {
       const res = await sendRuntimeMessage({ type: "popup_launch_helper" });

@@ -35,10 +35,18 @@ final class GlobalNotificationWindowManager {
 
     private var queue: NotificationStackQueue
     private var activeEntries: [String: ActiveCardEntry] = [:]
+    private var clearAllPanel: FloatingNotificationPanel?
+    private var clearAllView: ClearAllGlassPillView?
+    private let chatStore = SessionChatStore()
+    private var chatPopupPanel: FloatingNotificationPanel?
+    private var chatPopupView: GlassChatPopupView?
+    private var activeChatPopupMessage: WhatsAppMessage?
     private var currentConfig: HelperConfiguration
     private var screenObserver: NSObjectProtocol?
 
     var onOpenWhatsAppRequested: ((WhatsAppMessage) -> Void)?
+    var onFetchLiveConversation: ((WhatsAppMessage) -> [ChatBubbleEntry])?
+    var onCountsChanged: ((Int, Int) -> Void)?
 
     init(config: HelperConfiguration = HelperConfiguration()) {
         self.currentConfig = config
@@ -58,6 +66,14 @@ final class GlobalNotificationWindowManager {
 
     var queuedCount: Int {
         queue.pendingMessages.count
+    }
+
+    var isClearAllBarVisible: Bool {
+        clearAllPanel != nil
+    }
+
+    var isChatPopupVisible: Bool {
+        chatPopupPanel != nil
     }
 
     /// Updates notification configuration and handles disable/pause/duration/layout changes.
@@ -85,6 +101,10 @@ final class GlobalNotificationWindowManager {
             }
         }
 
+        if let openMsg = activeChatPopupMessage {
+            refreshOpenChatPopup(for: openMsg)
+        }
+
         // Promote queued cards if maxVisible increased.
         let promoted = queue.promoteAvailableSlots()
         for msg in promoted {
@@ -109,12 +129,22 @@ final class GlobalNotificationWindowManager {
             return
         }
 
+        chatStore.record(message)
+        if let openMsg = activeChatPopupMessage,
+           SessionChatStore.chatKey(for: openMsg) == SessionChatStore.chatKey(for: message) {
+            refreshOpenChatPopup(for: openMsg)
+        }
+
         let outcome = queue.enqueue(message)
         switch outcome {
         case .displayNow:
             presentCard(for: message)
             playSubtleSoundIfEnabled()
-        case .queued, .ignoredDuplicate:
+            notifyCountsChanged()
+        case .queued:
+            updateClearAllBarCountIfVisible()
+            notifyCountsChanged()
+        case .ignoredDuplicate:
             break
         }
     }
@@ -123,11 +153,16 @@ final class GlobalNotificationWindowManager {
         let shouldAnimate = (animated ?? currentConfig.animationEnabled) && !shouldReduceMotion
         guard let entry = activeEntries[id] else {
             _ = queue.remove(id: id)
+            notifyCountsChanged()
             return
         }
         guard !entry.isExiting else { return }
         entry.isExiting = true
         invalidateTimer(for: entry)
+
+        if !activeEntries.values.contains(where: { !$0.isExiting }) {
+            hideClearAllBar()
+        }
 
         let finishRemoval = { [weak self] in
             guard let self, self.activeEntries[id] === entry else { return }
@@ -139,6 +174,7 @@ final class GlobalNotificationWindowManager {
                 self.playSubtleSoundIfEnabled()
             }
             self.repositionVisiblePanels(animated: self.currentConfig.animationEnabled)
+            self.notifyCountsChanged()
         }
 
         if !shouldAnimate {
@@ -171,11 +207,14 @@ final class GlobalNotificationWindowManager {
     }
 
     func dismissAll(animated: Bool = false) {
+        hideClearAllBar()
+        closeChatPopup()
         let ids = Array(activeEntries.keys)
         queue.clearAll()
         for id in ids {
             dismiss(id: id, animated: animated)
         }
+        notifyCountsChanged()
     }
 
     // MARK: - Presentation & Stacking
@@ -192,6 +231,9 @@ final class GlobalNotificationWindowManager {
         let cardView = GlassNotificationCardView(
             message: message,
             config: currentConfig,
+            onCardClick: { [weak self] in
+                self?.handleNotificationCardClick(message)
+            },
             onCopy: { [weak self] in
                 self?.copyMessageToPasteboard(message)
             },
@@ -246,21 +288,22 @@ final class GlobalNotificationWindowManager {
         if animateEntry {
             let startFrame = NSRect(
                 x: targetFrame.origin.x,
-                y: targetFrame.origin.y - 26.0,
+                y: targetFrame.origin.y - 22.0,
                 width: targetFrame.width,
                 height: targetFrame.height
             )
             panel.setFrame(startFrame, display: false)
             panel.alphaValue = 0.0
             panel.orderFrontRegardless()
+            panel.invalidateShadow()
 
             if let layer = cardView.layer {
-                applyScaleAnimation(on: layer, from: 0.96, to: 1.0, duration: 0.46)
+                applyScaleAnimation(on: layer, from: 0.97, to: 1.0, duration: 0.46)
             }
 
             NSAnimationContext.runAnimationGroup { ctx in
                 ctx.duration = 0.46
-                ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1.0, 0.36, 1.0)
+                ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.19, 1.0, 0.22, 1.0)
                 panel.animator().alphaValue = 1.0
                 panel.animator().setFrame(targetFrame, display: true)
             }
@@ -269,6 +312,7 @@ final class GlobalNotificationWindowManager {
             panel.setFrame(targetFrame, display: false)
             panel.alphaValue = 0.0
             panel.orderFrontRegardless()
+            panel.invalidateShadow()
             NSAnimationContext.runAnimationGroup { ctx in
                 ctx.duration = 0.20
                 panel.animator().alphaValue = 1.0
@@ -277,6 +321,7 @@ final class GlobalNotificationWindowManager {
             panel.setFrame(targetFrame, display: false)
             panel.alphaValue = 1.0
             panel.orderFrontRegardless()
+            panel.invalidateShadow()
         }
 
         // Smoothly reposition older visible cards in the stack.
@@ -295,13 +340,17 @@ final class GlobalNotificationWindowManager {
         }
 
         startDismissTimer(for: entry)
+        updateClearAllBar(for: targetFrames, in: bounds, animated: animateEntry)
     }
 
     func repositionVisiblePanels(animated: Bool) {
         let orderedMessages = queue.visibleMessages.filter {
             activeEntries[$0.id]?.isExiting == false
         }
-        guard !orderedMessages.isEmpty else { return }
+        guard !orderedMessages.isEmpty else {
+            hideClearAllBar()
+            return
+        }
 
         let sizes = orderedMessages.compactMap { msg -> CGSize? in
             activeEntries[msg.id]?.cardView.preferredSize()
@@ -321,13 +370,294 @@ final class GlobalNotificationWindowManager {
             if shouldAnimate {
                 NSAnimationContext.runAnimationGroup { ctx in
                     ctx.duration = 0.24
-                    ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1.0, 0.36, 1.0)
+                    ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.19, 1.0, 0.22, 1.0)
                     entry.panel.animator().setFrame(frame, display: true)
                 }
+                entry.panel.invalidateShadow()
             } else {
                 entry.panel.setFrame(frame, display: true)
+                entry.panel.invalidateShadow()
             }
         }
+
+        updateClearAllBar(for: targetFrames, in: bounds, animated: shouldAnimate)
+        repositionChatPopupIfVisible(cardFrames: targetFrames, bounds: bounds, animated: shouldAnimate)
+    }
+
+    // MARK: - Notification Click & Floating Glass Chat Popup
+
+    func handleNotificationCardClick(_ message: WhatsAppMessage) {
+        dismiss(id: message.id, animated: currentConfig.animationEnabled)
+        switch currentConfig.notificationClickAction {
+        case .openGlassChatPopup:
+            openChatPopup(for: message)
+        case .openWhatsAppDirectly:
+            onOpenWhatsAppRequested?(message)
+        }
+    }
+
+    func openChatPopup(for message: WhatsAppMessage) {
+        chatStore.record(message)
+        activeChatPopupMessage = message
+
+        let chatTitle = message.chatName ?? message.sender ?? "WhatsApp Chat"
+        let subtitle: String? = (message.chatName != nil && message.sender != nil && message.chatName != message.sender)
+            ? message.sender
+            : nil
+
+        let merged = mergedConversation(for: message)
+        let bounds = DisplayScreenLocator.targetBounds(for: currentConfig.preferredDisplayMode)
+        let targetFrame = computeNonOverlappingChatPopupFrame(bounds: bounds)
+
+        if let existingView = chatPopupView, let existingPanel = chatPopupPanel {
+            existingView.update(
+                chatTitle: chatTitle,
+                subtitle: subtitle,
+                messages: merged.entries,
+                isLiveAXSynced: merged.isLiveAXSynced,
+                isTestChat: message.isTest,
+                config: currentConfig,
+                onRefresh: { [weak self] in
+                    self?.refreshOpenChatPopup(for: message)
+                },
+                onOpenWhatsApp: { [weak self] in
+                    self?.onOpenWhatsAppRequested?(message)
+                },
+                onCopyText: { [weak self] text in
+                    self?.copyRawTextToPasteboard(text)
+                },
+                onClose: { [weak self] in
+                    self?.closeChatPopup()
+                }
+            )
+            existingPanel.setFrame(targetFrame, display: true)
+            existingPanel.orderFrontRegardless()
+            return
+        }
+
+        let popupView = GlassChatPopupView(
+            chatTitle: chatTitle,
+            subtitle: subtitle,
+            messages: merged.entries,
+            isLiveAXSynced: merged.isLiveAXSynced,
+            isTestChat: message.isTest,
+            config: currentConfig,
+            onRefresh: { [weak self] in
+                self?.refreshOpenChatPopup(for: message)
+            },
+            onOpenWhatsApp: { [weak self] in
+                self?.onOpenWhatsAppRequested?(message)
+            },
+            onCopyText: { [weak self] text in
+                self?.copyRawTextToPasteboard(text)
+            },
+            onClose: { [weak self] in
+                self?.closeChatPopup()
+            }
+        )
+
+        let panel = FloatingNotificationPanel(contentRect: targetFrame)
+        panel.contentView = popupView
+        chatPopupView = popupView
+        chatPopupPanel = panel
+
+        let animate = currentConfig.animationEnabled && !shouldReduceMotion
+        if animate {
+            let startFrame = NSRect(
+                x: targetFrame.origin.x,
+                y: targetFrame.origin.y - 22.0,
+                width: targetFrame.width,
+                height: targetFrame.height
+            )
+            panel.setFrame(startFrame, display: false)
+            panel.alphaValue = 0.0
+            panel.orderFrontRegardless()
+
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.36
+                ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1.0, 0.36, 1.0)
+                panel.animator().alphaValue = 1.0
+                panel.animator().setFrame(targetFrame, display: true)
+            }
+        } else {
+            panel.setFrame(targetFrame, display: false)
+            panel.alphaValue = 1.0
+            panel.orderFrontRegardless()
+        }
+    }
+
+    func refreshOpenChatPopup(for message: WhatsAppMessage) {
+        guard activeChatPopupMessage != nil else { return }
+        openChatPopup(for: message)
+    }
+
+    func closeChatPopup() {
+        if let panel = chatPopupPanel {
+            panel.orderOut(nil)
+            panel.close()
+        }
+        chatPopupPanel = nil
+        chatPopupView = nil
+        activeChatPopupMessage = nil
+    }
+
+    private func mergedConversation(for message: WhatsAppMessage) -> (entries: [ChatBubbleEntry], isLiveAXSynced: Bool) {
+        let liveEntries = message.isTest ? [] : (onFetchLiveConversation?(message) ?? [])
+        let sessionEntries = chatStore.messages(for: message)
+
+        if !liveEntries.isEmpty {
+            var combined = liveEntries
+            for item in sessionEntries {
+                let alreadyInLive = combined.contains {
+                    $0.text.trimmingCharacters(in: .whitespacesAndNewlines) ==
+                        item.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                if !alreadyInLive {
+                    combined.append(item)
+                }
+            }
+            return (combined, true)
+        }
+        return (sessionEntries, false)
+    }
+
+    private func computeNonOverlappingChatPopupFrame(bounds: ScreenBounds, cardFrames: [CGRect]? = nil) -> CGRect {
+        var frame = DisplayScreenLocator.computeChatPopupFrame(
+            size: GlassChatPopupView.popupSize,
+            in: bounds.visibleFrame,
+            position: currentConfig.notificationPosition,
+            edgeMargin: currentConfig.edgeMargin
+        )
+
+        let activeFrames = cardFrames ?? activeEntries.values
+            .filter { !$0.isExiting }
+            .map { $0.panel.frame }
+
+        if !activeFrames.isEmpty {
+            let offsetShift = GlassNotificationCardView.cardWidth + 14.0
+            if currentConfig.notificationPosition.isRightAligned {
+                let shiftedX = frame.origin.x - offsetShift
+                if shiftedX >= bounds.visibleFrame.minX + 8.0 {
+                    frame.origin.x = shiftedX
+                }
+            } else {
+                let shiftedX = frame.origin.x + offsetShift
+                if shiftedX + frame.width <= bounds.visibleFrame.maxX - 8.0 {
+                    frame.origin.x = shiftedX
+                }
+            }
+        }
+
+        return frame
+    }
+
+    private func repositionChatPopupIfVisible(cardFrames: [CGRect], bounds: ScreenBounds, animated: Bool) {
+        guard let panel = chatPopupPanel else { return }
+        let target = computeNonOverlappingChatPopupFrame(bounds: bounds, cardFrames: cardFrames)
+        if animated && !shouldReduceMotion {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.24
+                ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1.0, 0.36, 1.0)
+                panel.animator().setFrame(target, display: true)
+            }
+        } else {
+            panel.setFrame(target, display: true)
+        }
+    }
+
+    // MARK: - Clear All Floating Pill
+
+    private func updateClearAllBarCountIfVisible() {
+        guard clearAllPanel != nil else { return }
+        repositionVisiblePanels(animated: false)
+    }
+
+    private func updateClearAllBar(for cardFrames: [CGRect], in bounds: ScreenBounds, animated: Bool) {
+        let total = activeEntries.values.filter { !$0.isExiting }.count + queue.pendingMessages.count
+        guard total >= 1, !cardFrames.isEmpty else {
+            hideClearAllBar()
+            return
+        }
+
+        let pillView: ClearAllGlassPillView
+        let pillPanel: FloatingNotificationPanel
+        let isNew: Bool
+
+        if let existingView = clearAllView, let existingPanel = clearAllPanel {
+            existingView.update(totalCount: total, config: currentConfig) { [weak self] in
+                guard let self else { return }
+                self.dismissAll(animated: self.currentConfig.animationEnabled)
+            }
+            pillView = existingView
+            pillPanel = existingPanel
+            isNew = false
+        } else {
+            let newView = ClearAllGlassPillView(
+                totalCount: total,
+                config: currentConfig
+            ) { [weak self] in
+                guard let self else { return }
+                self.dismissAll(animated: self.currentConfig.animationEnabled)
+            }
+            let newPanel = FloatingNotificationPanel(contentRect: NSRect(x: 0, y: 0, width: 120, height: 30))
+            newPanel.contentView = newView
+            clearAllView = newView
+            clearAllPanel = newPanel
+            pillView = newView
+            pillPanel = newPanel
+            isNew = true
+        }
+
+        let barSize = pillView.preferredSize()
+        let targetFrame = DisplayScreenLocator.computeClearAllBarFrame(
+            for: cardFrames,
+            barSize: barSize,
+            in: bounds.visibleFrame,
+            position: currentConfig.notificationPosition,
+            edgeMargin: currentConfig.edgeMargin
+        )
+
+        if isNew {
+            pillPanel.setFrame(targetFrame, display: false)
+            if animated && !shouldReduceMotion {
+                pillPanel.alphaValue = 0.0
+                pillPanel.orderFrontRegardless()
+                pillPanel.invalidateShadow()
+                NSAnimationContext.runAnimationGroup { ctx in
+                    ctx.duration = 0.25
+                    pillPanel.animator().alphaValue = 1.0
+                }
+            } else {
+                pillPanel.alphaValue = 1.0
+                pillPanel.orderFrontRegardless()
+                pillPanel.invalidateShadow()
+            }
+        } else if animated && !shouldReduceMotion {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.24
+                ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.19, 1.0, 0.22, 1.0)
+                pillPanel.animator().setFrame(targetFrame, display: true)
+            }
+            pillPanel.invalidateShadow()
+        } else {
+            pillPanel.setFrame(targetFrame, display: true)
+            pillPanel.invalidateShadow()
+        }
+    }
+
+    private func hideClearAllBar() {
+        if let panel = clearAllPanel {
+            panel.orderOut(nil)
+            panel.close()
+        }
+        clearAllPanel = nil
+        clearAllView = nil
+    }
+
+    private func notifyCountsChanged() {
+        let activeCount = activeEntries.values.filter { !$0.isExiting }.count
+        let pendingCount = queue.pendingMessages.count
+        onCountsChanged?(activeCount, pendingCount)
     }
 
     // MARK: - Timers, Sound, Clipboard & Screen Changes
@@ -379,9 +709,13 @@ final class GlobalNotificationWindowManager {
             return
         }
 
+        copyRawTextToPasteboard(payload)
+    }
+
+    private func copyRawTextToPasteboard(_ text: String) {
         let pb = NSPasteboard.general
         pb.clearContents()
-        pb.setString(payload, forType: .string)
+        pb.setString(text, forType: .string)
     }
 
     private func playSubtleSoundIfEnabled() {
