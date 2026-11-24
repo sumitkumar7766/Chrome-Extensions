@@ -8,99 +8,227 @@
 </head>
 <body>
   <div class="app">
-    <header class="header">
-      <div class="brand">
-        <img src="icons/icon48.png" width="26" height="26" alt="PingGlass logo" class="brand-icon">
-        <div class="brand-meta">
-          <h1 class="brand-title">PingGlass</h1>
-          <span id="overall-badge" class="overall-badge" data-tone="neutral">Checking status…</span>
+    <!-- Status View (Matches StatusView.swift) -->
+    <div id="status-panel" class="panel-view">
+      <header class="header">
+        <div class="brand">
+          <div class="brand-badge" aria-hidden="true">
+            <svg viewBox="0 0 18 18" fill="none">
+              <path d="M9 2.5C5.13 2.5 2 5.28 2 8.7c0 1.32.47 2.55 1.28 3.55L2.4 15.2l3.15-.9c1.05.45 2.22.7 3.45.7 3.87 0 7-2.78 7-6.3S12.87 2.5 9 2.5Z" fill="#fff"/>
+              <path d="M9 5.9v3.2M9 11.4v.3" stroke="#1ca854" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="brand-meta">
+            <h1 class="brand-title">PingGlass</h1>
+            <span id="monitoring-status" class="state-subtitle" data-tone="neutral">Checking status…</span>
+          </div>
         </div>
-      </div>
 
-      <button id="settings-btn" type="button" class="btn-icon" title="Settings" aria-label="Open settings">
-        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M8 10.25A2.25 2.25 0 1 0 8 5.75a2.25 2.25 0 0 0 0 4.5Z" stroke="currentColor" stroke-width="1.35"/>
-          <path d="M13.2 9.45a1.1 1.1 0 0 0 .22 1.21l.04.04a1.33 1.33 0 1 1-1.88 1.88l-.04-.04a1.1 1.1 0 0 0-1.21-.22 1.1 1.1 0 0 0-.67 1.01v.11a1.33 1.33 0 1 1-2.66 0v-.06a1.1 1.1 0 0 0-.72-1.01 1.1 1.1 0 0 0-1.21.22l-.04.04a1.33 1.33 0 1 1-1.88-1.88l.04-.04a1.1 1.1 0 0 0 .22-1.21 1.1 1.1 0 0 0-1.01-.67h-.11a1.33 1.33 0 1 1 0-2.66h.06a1.1 1.1 0 0 0 1.01-.72 1.1 1.1 0 0 0-.22-1.21l-.04-.04a1.33 1.33 0 1 1 1.88-1.88l.04.04a1.1 1.1 0 0 0 1.21.22h.05a1.1 1.1 0 0 0 .67-1.01v-.11a1.33 1.33 0 1 1 2.66 0v.06a1.1 1.1 0 0 0 .67 1.01 1.1 1.1 0 0 0 1.21-.22l.04-.04a1.33 1.33 0 1 1 1.88 1.88l-.04.04a1.1 1.1 0 0 0-.22 1.21v.05a1.1 1.1 0 0 0 1.01.67h.11a1.33 1.33 0 1 1 0 2.66h-.06a1.1 1.1 0 0 0-1.01.67Z" stroke="currentColor" stroke-width="1.2"/>
-        </svg>
-      </button>
-    </header>
+        <button id="settings-btn" type="button" class="btn-gear" title="Open Settings" aria-label="Open settings">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 10.25A2.25 2.25 0 1 0 8 5.75a2.25 2.25 0 0 0 0 4.5Z" stroke="currentColor" stroke-width="1.35"/>
+            <path d="M13.2 9.45a1.1 1.1 0 0 0 .22 1.21l.04.04a1.33 1.33 0 1 1-1.88 1.88l-.04-.04a1.1 1.1 0 0 0-1.21-.22 1.1 1.1 0 0 0-.67 1.01v.11a1.33 1.33 0 1 1-2.66 0v-.06a1.1 1.1 0 0 0-.72-1.01 1.1 1.1 0 0 0-1.21.22l-.04.04a1.33 1.33 0 1 1-1.88-1.88l.04-.04a1.1 1.1 0 0 0 .22-1.21 1.1 1.1 0 0 0-1.01-.67h-.11a1.33 1.33 0 1 1 0-2.66h.06a1.1 1.1 0 0 0 1.01-.72 1.1 1.1 0 0 0-.22-1.21l-.04-.04a1.33 1.33 0 1 1 1.88-1.88l.04.04a1.1 1.1 0 0 0 1.21.22h.05a1.1 1.1 0 0 0 .67-1.01v-.11a1.33 1.33 0 1 1 2.66 0v.06a1.1 1.1 0 0 0 .67 1.01 1.1 1.1 0 0 0 1.21-.22l.04-.04a1.33 1.33 0 1 1 1.88 1.88l-.04.04a1.1 1.1 0 0 0-.22 1.21v.05a1.1 1.1 0 0 0 1.01.67h.11a1.33 1.33 0 1 1 0 2.66h-.06a1.1 1.1 0 0 0-1.01.67Z" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </button>
+      </header>
 
-    <main class="content">
-      <!-- Real Status Card -->
-      <section class="card status-card" aria-label="System connection status">
+      <!-- Status Rows Card -->
+      <section class="status-card" aria-label="System connection status">
         <div class="status-row">
-          <span class="status-label">Native Bridge</span>
-          <span id="bridge-status" class="status-value" data-dot="muted">Disconnected</span>
+          <span class="status-label"><span id="dot-whatsapp" class="dot" data-dot="muted"></span>WhatsApp Desktop</span>
+          <span id="whatsapp-status" class="status-value">Checking…</span>
         </div>
         <div class="status-row">
-          <span class="status-label">WhatsApp Desktop</span>
-          <span id="whatsapp-status" class="status-value" data-dot="muted">Unknown</span>
+          <span class="status-label"><span id="dot-ax" class="dot" data-dot="muted"></span>Accessibility</span>
+          <span id="accessibility-status" class="status-value">Unknown</span>
         </div>
         <div class="status-row">
-          <span class="status-label">Accessibility</span>
-          <span id="accessibility-status" class="status-value" data-dot="muted">Unknown</span>
+          <span class="status-label"><span id="dot-global" class="dot" data-dot="muted"></span>Global Notifications</span>
+          <span id="desktop-overlay-status" class="status-value">Unknown</span>
         </div>
         <div class="status-row">
-          <span class="status-label">Monitoring</span>
-          <span id="monitoring-status" class="status-value" data-dot="muted">Inactive</span>
+          <span class="status-label"><span id="dot-bridge" class="dot" data-dot="muted"></span>Chrome Bridge</span>
+          <span id="bridge-status" class="status-value">Disconnected</span>
         </div>
         <div class="status-row">
-          <span class="status-label">macOS Global Glass</span>
-          <span id="desktop-overlay-status" class="status-value" data-dot="muted">Unknown</span>
+          <span class="status-label"><span id="dot-overlay" class="dot" data-dot="ok"></span>Chrome Tab Overlay</span>
+          <span id="overlay-status" class="status-value">Auto-Enabled</span>
         </div>
         <div class="status-row">
-          <span class="status-label">Chrome Tab Overlay</span>
-          <span id="overlay-status" class="status-value" data-dot="muted">Inactive</span>
+          <span class="status-label"><span id="dot-mode" class="dot" data-dot="muted"></span>Detection Mode</span>
+          <span id="detection-mode-status" class="status-value">Idle</span>
         </div>
         <div class="status-row">
-          <span class="status-label">Session Messages</span>
-          <span id="session-count" class="status-value">0</span>
+          <span class="status-label"><span id="dot-session" class="dot" data-dot="blue"></span>Session Messages</span>
+          <span id="session-count" class="status-value">0 messages</span>
         </div>
+        <p id="status-detail" class="status-detail">Observing WhatsApp Desktop via Accessibility APIs.</p>
       </section>
 
-      <!-- Contextual Recovery Box -->
+      <!-- Recovery Banner -->
       <section id="recovery-box" class="recovery-box" hidden>
         <h2 id="recovery-title" class="recovery-title">Setup Required</h2>
         <p id="recovery-desc" class="recovery-desc"></p>
         <code id="recovery-cmd" class="recovery-cmd" hidden></code>
         <div class="recovery-actions">
-          <button id="copy-id-btn" type="button" class="btn btn-sm btn-secondary" hidden>Copy Extension ID</button>
-          <button id="reconnect-btn" type="button" class="btn btn-sm btn-secondary" hidden>Reconnect Bridge</button>
+          <button id="copy-id-btn" type="button" class="btn-mini" hidden>Copy Extension ID</button>
+          <button id="reconnect-btn" type="button" class="btn-mini btn-mini-accent" hidden>Reconnect</button>
+          <button id="recovery-open-app-btn" type="button" class="btn-mini btn-mini-accent" hidden>Open macOS App</button>
         </div>
       </section>
 
-      <!-- Monitoring Controls -->
-      <section class="actions-grid" aria-label="Controls">
-        <button id="start-monitoring-btn" type="button" class="btn btn-primary">
-          Start Monitoring
-        </button>
-        <button id="pause-monitoring-btn" type="button" class="btn btn-secondary">
-          Pause Monitoring
-        </button>
-
-        <button id="toggle-overlay-btn" type="button" class="btn btn-accent span-2">
-          Enable Glass Overlay on This Tab
-        </button>
-
-        <button id="test-notification-btn" type="button" class="btn btn-secondary">
-          Test Notification
-        </button>
-        <button id="clear-all-btn" type="button" class="btn btn-secondary">
-          Clear All
-        </button>
-        <button id="open-settings-btn" type="button" class="btn btn-secondary">
-          Settings
-        </button>
-        <button id="open-app-btn" type="button" class="btn btn-secondary">
-          Open macOS App
-        </button>
+      <!-- Inline Preview Card (shown only when Test clicked on restricted chrome:// internal tab while offline) -->
+      <section id="inline-preview-card" class="inline-preview-card" hidden>
+        <div class="inline-preview-top">
+          <span class="inline-preview-wa">WhatsApp <span class="mini-test-badge">TEST</span></span>
+          <button id="close-inline-preview" type="button" class="btn-mini">Dismiss</button>
+        </div>
+        <div class="inline-preview-sender">PingGlass Test</div>
+        <div class="inline-preview-sub">Global Notification</div>
+        <div class="inline-preview-text">Your global glass notification is working beautifully! ✨</div>
       </section>
-    </main>
 
-    <footer class="footer">
-      <span class="privacy-note">Local-only · No message history stored</span>
-      <span id="ext-id-label" class="ext-id"></span>
-    </footer>
+      <!-- Main Controls (Matches StatusView.swift) -->
+      <section class="controls-section" aria-label="Controls">
+        <div class="controls-row-primary">
+          <button id="toggle-monitoring-btn" type="button" class="btn-toggle-monitoring" data-active="false">
+            <span id="monitoring-btn-icon" aria-hidden="true">▶</span>
+            <span id="monitoring-btn-label">Start Monitoring</span>
+          </button>
+
+          <button id="test-notification-btn" type="button" class="btn-test" title="Show a test notification">
+            <span aria-hidden="true">✦</span>
+            <span>Test</span>
+          </button>
+        </div>
+
+        <div class="controls-row-secondary">
+          <button id="clear-all-btn" type="button" class="btn-secondary">
+            <span>Clear All</span>
+          </button>
+
+          <div class="pause-wrap">
+            <button id="pause-btn" type="button" class="btn-secondary">
+              <span>Pause ▾</span>
+            </button>
+            <button id="resume-btn" type="button" class="btn-resume" hidden>
+              <span>Resume</span>
+            </button>
+            <div id="pause-menu" class="pause-menu" hidden>
+              <button type="button" data-minutes="15">Pause for 15 minutes</button>
+              <button type="button" data-minutes="60">Pause for 1 hour</button>
+              <button type="button" data-indefinite="true">Pause until manually resumed</button>
+            </div>
+          </div>
+
+          <button id="open-settings-btn" type="button" class="btn-secondary">
+            <span>Settings</span>
+          </button>
+        </div>
+
+        <div class="utility-footer">
+          <button id="refresh-status-btn" type="button" class="link-btn">↻ Refresh Status</button>
+          <button id="open-app-btn" type="button" class="link-btn link-btn-muted">Open macOS App</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Embedded Settings View (Matches SettingsView.swift) -->
+    <div id="settings-panel" class="panel-view" hidden>
+      <header class="settings-header">
+        <button id="settings-back-btn" type="button" class="back-btn">‹ Back</button>
+        <h2 class="settings-title">Settings &amp; Privacy</h2>
+        <button id="open-full-options-btn" type="button" class="link-btn link-btn-muted" title="Open full settings tab">Full ↗</button>
+      </header>
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-scroll">
+        <section class="settings-box">
+          <h3>Glass Notifications &amp; Overlay</h3>
+          <label class="s-toggle"><span>Auto-show Overlay in Chrome</span><input id="s-chromeAutoOverlay" type="checkbox"></label>
+          <label class="s-toggle"><span>Enable Global Notifications</span><input id="s-notificationsEnabled" type="checkbox"></label>
+          <label class="s-toggle"><span>Forward to Chrome Extension</span><input id="s-chromeForwardingEnabled" type="checkbox"></label>
+          <label class="s-toggle"><span>Slide &amp; Fade Animations</span><input id="s-enableAnimation" type="checkbox"></label>
+          <label class="s-toggle"><span>Subtle Notification Sound</span><input id="s-soundEnabled" type="checkbox"></label>
+
+          <div class="s-field">
+            <label for="s-theme">Appearance</label>
+            <select id="s-theme">
+              <option value="dark">Dark Glass</option>
+              <option value="light">Light Glass</option>
+            </select>
+          </div>
+          <div class="s-field">
+            <label for="s-position">Position</label>
+            <select id="s-position">
+              <option value="bottom-right">Bottom Right</option>
+              <option value="center-right">Center Right</option>
+              <option value="top-right">Top Right</option>
+              <option value="bottom-left">Bottom Left</option>
+              <option value="top-left">Top Left</option>
+            </select>
+          </div>
+          <div class="s-field">
+            <label for="s-autoDismissSeconds">Auto-Dismiss</label>
+            <select id="s-autoDismissSeconds">
+              <option value="0">Until closed (Never)</option>
+              <option value="3">3 seconds</option>
+              <option value="5">5 seconds</option>
+              <option value="6">6 seconds</option>
+              <option value="8">8 seconds</option>
+              <option value="10">10 seconds</option>
+            </select>
+          </div>
+          <div class="s-field">
+            <label for="s-clickAction">On Card Click</label>
+            <select id="s-clickAction">
+              <option value="open_glass_chat_popup">Open Floating Glass Chat Popup</option>
+              <option value="open_whatsapp_directly">Open Chat in WhatsApp Desktop</option>
+            </select>
+          </div>
+          <div class="s-field">
+            <label for="s-maxVisible">Max Visible Cards</label>
+            <input id="s-maxVisible" type="number" min="1" max="6" step="1">
+          </div>
+        </section>
+
+        <section class="settings-box">
+          <h3>Notification Card Elements</h3>
+          <label class="s-toggle"><span>Show Avatar / Initials</span><input id="s-showAvatar" type="checkbox"></label>
+          <label class="s-toggle"><span>Show Sender Name</span><input id="s-showSender" type="checkbox"></label>
+          <label class="s-toggle"><span>Show Chat Name</span><input id="s-showChatName" type="checkbox"></label>
+          <label class="s-toggle"><span>Show Timestamp</span><input id="s-showTimestamp" type="checkbox"></label>
+          <label class="s-toggle"><span>Show Message Preview</span><input id="s-showPreview" type="checkbox"></label>
+          <label class="s-toggle"><span>Show Copy Button</span><input id="s-showCopyButton" type="checkbox"></label>
+        </section>
+
+        <section class="settings-box">
+          <h3>Monitoring &amp; Direction</h3>
+          <label class="s-toggle"><span>WhatsApp Accessibility Monitoring</span><input id="s-monitoringEnabled" type="checkbox"></label>
+          <div class="s-field">
+            <label for="s-ambiguousDirectionPolicy">Uncertain Direction</label>
+            <select id="s-ambiguousDirectionPolicy">
+              <option value="ignore">Ignore uncertain (Recommended)</option>
+              <option value="forward_low_confidence">Forward low confidence</option>
+            </select>
+          </div>
+          <div class="s-field">
+            <label for="s-maxPreviewLength">Max Preview Chars</label>
+            <input id="s-maxPreviewLength" type="number" min="60" max="800" step="20">
+          </div>
+        </section>
+
+        <section class="settings-box settings-privacy">
+          <h3>Local-Only Privacy</h3>
+          <p>Messages are processed locally in memory, synced only between PingGlass.app and this extension, and never written to disk.</p>
+          <div class="s-meta-row">
+            <span id="ext-id-label" class="ext-id">ID: …</span>
+            <button id="toggle-tab-overlay-btn" type="button" class="btn-mini">Toggle This Tab</button>
+          </div>
+        </section>
+      </div>
+    </div>
 
     <div id="popup-toast" class="popup-toast" role="status" aria-live="polite" hidden></div>
   </div>

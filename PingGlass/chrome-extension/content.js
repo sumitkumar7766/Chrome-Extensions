@@ -1,9 +1,9 @@
 /**
  * PingGlass Floating Glass Overlay Content Script
  *
- * Injected explicitly into the active tab when the user enables the overlay.
- * Renders notifications inside an isolated Shadow DOM host so page CSS cannot
- * leak in and overlay styles never affect the host webpage.
+ * Renders floating Liquid Glass notifications and an interactive Glass Chat Popup
+ * inside an isolated Shadow DOM host matching the native macOS PingGlass app.
+ * Uses pure DOM creation APIs (`createElement`, `createElementNS`, `textContent`) and extension-preloaded CSS.
  */
 
 (() => {
@@ -23,8 +23,6 @@
     return;
   }
 
-  // Prevent duplicate listeners within the same extension instance, while allowing
-  // clean replacement if the extension was reloaded in chrome://extensions.
   if (window.__pingGlassController) {
     if (window.__pingGlassController.extensionId === chrome.runtime.id) {
       return;
@@ -38,8 +36,10 @@
 
   let settings = {
     notificationsEnabled: true,
+    chromeAutoOverlay: true,
     autoDismissSeconds: 0,
     maxVisible: 3,
+    edgeMargin: 20,
     showSender: true,
     showChatName: true,
     showAvatar: true,
@@ -48,6 +48,7 @@
     showCopyButton: true,
     position: "bottom-right",
     theme: "dark",
+    clickAction: "open_glass_chat_popup",
     enableAnimation: true,
     soundEnabled: false,
     maxPreviewLength: 280,
@@ -55,19 +56,81 @@
 
   let hostElement = null;
   let shadowRoot = null;
+  let styleEl = null;
   let stackContainer = null;
   let clearAllBar = null;
   let clearAllBtn = null;
+  let clearAllLabelEl = null;
+  let chatPopupEl = null;
+  let activeChatMessage = null;
   let stylesLoaded = false;
 
   const activeCards = new Map(); // id -> record
   const pendingQueue = [];
+  const localChatCache = new Map(); // chatKey -> [entries]
+
+  const FALLBACK_CSS =
+    ":host{all:initial;position:fixed;z-index:2147483647;pointer-events:none;font-family:-apple-system,sans-serif;}" +
+    ".pg-stack{position:fixed;right:20px;bottom:20px;width:318px;display:flex;flex-direction:column;gap:8px;pointer-events:none;}" +
+    ".pg-card{pointer-events:auto;border-radius:18px;padding:10px 13px;color:#fff;background:rgba(18,20,24,.78);border:1px solid rgba(255,255,255,.24);cursor:pointer;}" +
+    ".pg-clear-all-bar{display:flex;justify-content:flex-end;pointer-events:none;}" +
+    ".pg-clear-all-btn{pointer-events:auto;display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 11px;border-radius:13px;color:#fff;background:rgba(20,22,27,.78);border:1px solid rgba(255,255,255,.24);cursor:pointer;}" +
+    ".pg-top-header{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px;}" +
+    ".pg-brand-left{display:flex;align-items:center;gap:6px;}" +
+    ".pg-wa-square{width:17px;height:17px;border-radius:5px;background:#25d366;color:#fff;display:inline-flex;align-items:center;justify-content:center;}" +
+    ".pg-controls{display:flex;align-items:center;gap:4px;}" +
+    ".pg-btn{width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}" +
+    ".pg-body-row{display:flex;align-items:stretch;gap:10px;}" +
+    ".pg-avatar-initials{width:34px;height:34px;border-radius:50%;border:1.25px solid #25d366;display:flex;align-items:center;justify-content:center;}" +
+    ".pg-divider{width:1px;background:rgba(255,255,255,.14);}" +
+    ".pg-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}" +
+    ".pg-chat-popup{position:fixed;right:20px;bottom:20px;width:318px;height:336px;border-radius:18px;pointer-events:auto;color:#fff;background:rgba(18,20,24,.88);border:1px solid rgba(255,255,255,.24);display:flex;flex-direction:column;overflow:hidden;}";
+
+  /* -------------------------------------------------------------------------- */
+  /* Local Chat Cache & Runtime Helper                                          */
+  /* -------------------------------------------------------------------------- */
+
+  function chatKey(message) {
+    return String(message?.chatName || message?.sender || message?.id || "whatsapp")
+      .trim()
+      .toLowerCase();
+  }
+
+  function recordLocalChat(message) {
+    if (!message || !message.text) return;
+    const key = chatKey(message);
+    const list = localChatCache.get(key) || [];
+    if (!list.some((item) => item.id === message.id)) {
+      list.push({
+        id: message.id,
+        sender: message.sender || null,
+        text: message.text,
+        timestamp: message.timestamp || null,
+        isOutgoing: false,
+        isTest: Boolean(message.isTest),
+      });
+      if (list.length > 40) list.shift();
+      localChatCache.set(key, list);
+    }
+  }
+
+  function safeSendBackgroundMessage(payload) {
+    if (!isExtensionContextValid() || typeof chrome.runtime.sendMessage !== "function") {
+      return Promise.resolve(null);
+    }
+    try {
+      const res = chrome.runtime.sendMessage(payload);
+      return res && typeof res.catch === "function" ? res.catch(() => null) : Promise.resolve(null);
+    } catch {
+      return Promise.resolve(null);
+    }
+  }
 
   /* -------------------------------------------------------------------------- */
   /* Shadow DOM Setup & Styling                                                 */
   /* -------------------------------------------------------------------------- */
 
-  async function ensureOverlayMounted() {
+  async function ensureOverlayMounted(cssTextFromBg = null) {
     if (!hostElement || !document.documentElement.contains(hostElement)) {
       hostElement = document.createElement("div");
       hostElement.id = HOST_ID;
@@ -76,6 +139,9 @@
 
       shadowRoot = hostElement.attachShadow({ mode: "open" });
 
+      styleEl = document.createElement("style");
+      shadowRoot.appendChild(styleEl);
+
       stackContainer = document.createElement("div");
       stackContainer.className = "pg-stack";
       shadowRoot.appendChild(stackContainer);
@@ -83,8 +149,10 @@
       stylesLoaded = false;
     }
 
-    if (!stylesLoaded && shadowRoot) {
-      const styleEl = document.createElement("style");
+    if (styleEl && cssTextFromBg && typeof cssTextFromBg === "string") {
+      styleEl.textContent = cssTextFromBg;
+      stylesLoaded = true;
+    } else if (styleEl && !stylesLoaded) {
       try {
         if (!isExtensionContextValid()) {
           throw new Error("Extension context invalidated");
@@ -93,12 +161,8 @@
         const response = await fetch(cssUrl);
         styleEl.textContent = await response.text();
       } catch {
-        // Minimal fallback CSS if content.css fetch fails or extension reloaded
-        styleEl.textContent =
-          ".pg-stack{position:fixed;right:20px;bottom:20px;width:344px;display:flex;flex-direction:column;gap:10px;pointer-events:none;font-family:-apple-system,sans-serif;}" +
-          ".pg-card{pointer-events:auto;background:rgba(17,22,32,.85);color:#fff;border-radius:14px;padding:12px 14px;border:1px solid rgba(255,255,255,.15);}";
+        styleEl.textContent = FALLBACK_CSS;
       }
-      shadowRoot.prepend(styleEl);
       stylesLoaded = true;
     }
 
@@ -106,11 +170,31 @@
   }
 
   function applyContainerSettings() {
-    if (!stackContainer) return;
-    stackContainer.dataset.position = settings.position === "top-right" ? "top-right" : "bottom-right";
-    stackContainer.dataset.theme = settings.theme === "light" ? "light" : "dark";
-    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-    stackContainer.dataset.animations = settings.enableAnimation && !reducedMotion ? "on" : "off";
+    const allowedPositions = new Set([
+      "bottom-right",
+      "center-right",
+      "top-right",
+      "bottom-left",
+      "top-left",
+    ]);
+    const pos = allowedPositions.has(settings.position) ? settings.position : "bottom-right";
+    const theme = settings.theme === "light" ? "light" : "dark";
+    const margin = Math.max(12, Math.min(48, Number(settings.edgeMargin) || 20));
+    if (hostElement) {
+      hostElement.style.setProperty("--pg-margin", `${margin}px`);
+    }
+
+    if (stackContainer) {
+      stackContainer.dataset.position = pos;
+      stackContainer.dataset.theme = theme;
+      const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      stackContainer.dataset.animations = settings.enableAnimation && !reducedMotion ? "on" : "off";
+    }
+
+    if (chatPopupEl) {
+      chatPopupEl.dataset.theme = theme;
+      positionChatPopupElement(chatPopupEl);
+    }
   }
 
   function cleanupOverlay() {
@@ -121,15 +205,19 @@
       }
     }
     activeCards.clear();
+    localChatCache.clear();
+    closeChatPopup();
 
     if (hostElement && hostElement.parentNode) {
       hostElement.parentNode.removeChild(hostElement);
     }
     hostElement = null;
     shadowRoot = null;
+    styleEl = null;
     stackContainer = null;
     clearAllBar = null;
     clearAllBtn = null;
+    clearAllLabelEl = null;
     stylesLoaded = false;
   }
 
@@ -142,6 +230,7 @@
       }
       clearAllBar = null;
       clearAllBtn = null;
+      clearAllLabelEl = null;
       return;
     }
 
@@ -152,26 +241,43 @@
       clearAllBtn.type = "button";
       clearAllBtn.className = "pg-clear-all-btn";
       clearAllBtn.setAttribute("aria-label", "Clear all notifications");
+
+      const layersIcon = createSvgIcon(
+        [
+          { tag: "path", attrs: { d: "M8 2.2 13.5 5 8 7.8 2.5 5 8 2.2Z", stroke: "currentColor", "stroke-width": "1.3", "stroke-linejoin": "round" } },
+          { tag: "path", attrs: { d: "M2.5 8 8 10.8 13.5 8", stroke: "currentColor", "stroke-width": "1.3", "stroke-linecap": "round", "stroke-linejoin": "round" } },
+          { tag: "path", attrs: { d: "M2.5 11 8 13.8 13.5 11", stroke: "currentColor", "stroke-width": "1.3", "stroke-linecap": "round", "stroke-linejoin": "round" } },
+        ],
+        "0 0 16 16"
+      );
+      clearAllLabelEl = document.createElement("span");
+      clearAllBtn.appendChild(layersIcon);
+      clearAllBtn.appendChild(clearAllLabelEl);
+
       clearAllBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        clearAllNotifications();
+        clearAllNotifications({ notifyBackground: true });
       });
       clearAllBar.appendChild(clearAllBtn);
       stackContainer.prepend(clearAllBar);
     }
 
-    if (clearAllBtn) {
-      clearAllBtn.textContent = totalCount > 1 ? `Clear All (${totalCount})` : "Clear All";
+    if (clearAllLabelEl) {
+      clearAllLabelEl.textContent = totalCount > 1 ? `Clear All (${totalCount})` : "Clear All";
     }
   }
 
-  function clearAllNotifications() {
+  function clearAllNotifications({ notifyBackground = false } = {}) {
     pendingQueue.length = 0;
+    closeChatPopup();
     const ids = Array.from(activeCards.keys());
     for (const id of ids) {
-      dismissCard(id);
+      dismissCard(id, { notifyBackground: false });
     }
     updateClearAllBar();
+    if (notifyBackground) {
+      void safeSendBackgroundMessage({ type: "content_clear_all" });
+    }
   }
 
   /* -------------------------------------------------------------------------- */
@@ -204,20 +310,17 @@
         ctx.close().catch(() => {});
       }, 350);
     } catch {
-      // Autoplay policies may block audio without prior user gesture; ignore gracefully.
+      // Autoplay policies may block audio without prior user gesture.
     }
   }
 
   /* -------------------------------------------------------------------------- */
-  /* Safe DOM Element Builders                                                  */
+  /* Safe SVG & DOM Builders                                                    */
   /* -------------------------------------------------------------------------- */
 
   function computeInitials(name) {
     if (!name || typeof name !== "string") return "WA";
-    const parts = name
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+    const parts = name.trim().split(/\s+/).filter(Boolean);
     if (parts.length === 0) return "WA";
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -239,6 +342,126 @@
     return svg;
   }
 
+  function createOpenIcon() {
+    return createSvgIcon([
+      {
+        tag: "path",
+        attrs: {
+          d: "M7 3.5H4.5A1.5 1.5 0 0 0 3 5v6.5A1.5 1.5 0 0 0 4.5 13H11a1.5 1.5 0 0 0 1.5-1.5V9",
+          stroke: "currentColor",
+          "stroke-width": "1.35",
+          "stroke-linecap": "round",
+        },
+      },
+      {
+        tag: "path",
+        attrs: {
+          d: "M9.5 3H13v3.5M13 3L7.5 8.5",
+          stroke: "currentColor",
+          "stroke-width": "1.35",
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+        },
+      },
+    ]);
+  }
+
+  function createCopyIcon() {
+    return createSvgIcon([
+      {
+        tag: "rect",
+        attrs: {
+          x: "5.5",
+          y: "5.5",
+          width: "7.5",
+          height: "8.5",
+          rx: "1.5",
+          stroke: "currentColor",
+          "stroke-width": "1.35",
+        },
+      },
+      {
+        tag: "path",
+        attrs: {
+          d: "M10.5 5.5V3.5A1.5 1.5 0 0 0 9 2H4a1.5 1.5 0 0 0-1.5 1.5v6A1.5 1.5 0 0 0 4 11h1.5",
+          stroke: "currentColor",
+          "stroke-width": "1.35",
+        },
+      },
+    ]);
+  }
+
+  function createCheckIcon() {
+    return createSvgIcon([
+      {
+        tag: "path",
+        attrs: {
+          d: "M3.5 8.5 6.5 11.5 12.5 4.8",
+          stroke: "currentColor",
+          "stroke-width": "1.6",
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+        },
+      },
+    ]);
+  }
+
+  function createCloseIcon() {
+    return createSvgIcon([
+      {
+        tag: "path",
+        attrs: {
+          d: "M4.2 4.2L11.8 11.8M11.8 4.2L4.2 11.8",
+          stroke: "currentColor",
+          "stroke-width": "1.55",
+          "stroke-linecap": "round",
+        },
+      },
+    ]);
+  }
+
+  function createWhatsAppPhoneBubbleIcon() {
+    return createSvgIcon(
+      [
+        {
+          tag: "path",
+          attrs: {
+            d: "M8 2.2a5.5 5.5 0 0 0-4.78 8.23L2.5 13.5l3.15-.7A5.5 5.5 0 1 0 8 2.2Z",
+            fill: "currentColor",
+          },
+        },
+        {
+          tag: "path",
+          attrs: {
+            d: "M6.1 5.8c-.2.2-.35.6-.1 1.25.35.95 1.35 1.95 2.3 2.3.65.25 1.05.1 1.25-.1l.45-.45-.9-.65-.4.3c-.2-.08-.85-.65-.95-.95l.3-.4-.65-.9-.45.4Z",
+            fill: "#25d366",
+          },
+        },
+      ],
+      "0 0 16 16"
+    );
+  }
+
+  function triggerOpenWhatsApp(message) {
+    void safeSendBackgroundMessage({
+      type: "content_open_whatsapp",
+      message,
+    });
+  }
+
+  function handleCardClick(message) {
+    dismissCard(message.id, { notifyBackground: true });
+    if (settings.clickAction === "open_whatsapp_directly") {
+      triggerOpenWhatsApp(message);
+    } else {
+      void openChatPopup(message);
+    }
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /* Notification Card Builder (Matches GlassNotificationCardView)              */
+  /* -------------------------------------------------------------------------- */
+
   function buildNotificationCard(message) {
     const card = document.createElement("article");
     card.className = "pg-card";
@@ -247,85 +470,61 @@
     }
     card.setAttribute("role", "status");
 
-    const row = document.createElement("div");
-    row.className = "pg-row";
-
     const displaySender = message.sender || message.chatName || "WhatsApp Message";
 
-    // Avatar + WhatsApp badge
-    if (settings.showAvatar) {
-      const avatarWrap = document.createElement("div");
-      avatarWrap.className = "pg-avatar-wrap";
+    // Top Header Bar: [WA Badge + WhatsApp + TEST] .... [Timestamp + Open + Copy + Close]
+    const topHeader = document.createElement("div");
+    topHeader.className = "pg-top-header";
 
-      if (message.avatar) {
-        const img = document.createElement("img");
-        img.className = "pg-avatar-img";
-        img.src = message.avatar;
-        img.alt = "";
-        avatarWrap.appendChild(img);
-      } else {
-        const initials = document.createElement("div");
-        initials.className = "pg-avatar-initials";
-        initials.textContent = computeInitials(displaySender);
-        avatarWrap.appendChild(initials);
-      }
+    const brandLeft = document.createElement("div");
+    brandLeft.className = "pg-brand-left";
 
-      const badge = document.createElement("div");
-      badge.className = "pg-wa-badge";
-      badge.appendChild(
-        createSvgIcon(
-          [
-            {
-              tag: "path",
-              attrs: {
-                d: "M12 6.8A5.2 5.2 0 0 0 2.5 9.6L2 12l2.5-.5A5.2 5.2 0 0 0 12 6.8Z",
-                stroke: "currentColor",
-                "stroke-width": "1.5",
-                "stroke-linejoin": "round",
-              },
-            },
-          ],
-          "0 0 14 14"
-        )
-      );
-      avatarWrap.appendChild(badge);
-      row.appendChild(avatarWrap);
-    }
+    const waSquare = document.createElement("span");
+    waSquare.className = "pg-wa-square";
+    waSquare.appendChild(createWhatsAppPhoneBubbleIcon());
+    brandLeft.appendChild(waSquare);
 
-    const main = document.createElement("div");
-    main.className = "pg-main";
-
-    const headerLine = document.createElement("div");
-    headerLine.className = "pg-header-line";
-
-    const titleGroup = document.createElement("div");
-    titleGroup.className = "pg-title-group";
-
-    if (settings.showSender) {
-      const senderEl = document.createElement("span");
-      senderEl.className = "pg-sender";
-      senderEl.textContent = displaySender;
-      titleGroup.appendChild(senderEl);
-    }
+    const brandName = document.createElement("span");
+    brandName.className = "pg-brand-name";
+    brandName.textContent = "WhatsApp";
+    brandLeft.appendChild(brandName);
 
     if (message.isTest) {
-      const pill = document.createElement("span");
-      pill.className = "pg-test-pill";
-      pill.textContent = "Test";
-      titleGroup.appendChild(pill);
+      const testPill = document.createElement("span");
+      testPill.className = "pg-test-pill";
+      testPill.textContent = "TEST";
+      brandLeft.appendChild(testPill);
     }
 
-    headerLine.appendChild(titleGroup);
+    topHeader.appendChild(brandLeft);
 
     const controls = document.createElement("div");
     controls.className = "pg-controls";
 
-    if (settings.showTimestamp && message.timestamp) {
-      const timeEl = document.createElement("span");
-      timeEl.className = "pg-time";
-      timeEl.textContent = message.timestamp;
+    const timeEl = document.createElement("span");
+    timeEl.className = "pg-time";
+    if (settings.showTimestamp) {
+      timeEl.textContent = message.timestamp || "NOW";
       controls.appendChild(timeEl);
     }
+
+    const copiedPill = document.createElement("span");
+    copiedPill.className = "pg-copied-pill";
+    copiedPill.textContent = "Copied ✓";
+    copiedPill.hidden = true;
+    controls.appendChild(copiedPill);
+
+    const openBtn = document.createElement("button");
+    openBtn.type = "button";
+    openBtn.className = "pg-btn";
+    openBtn.title = "Open in WhatsApp";
+    openBtn.setAttribute("aria-label", "Open in WhatsApp");
+    openBtn.appendChild(createOpenIcon());
+    openBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      triggerOpenWhatsApp(message);
+    });
+    controls.appendChild(openBtn);
 
     if (settings.showCopyButton && message.text) {
       const copyBtn = document.createElement("button");
@@ -333,33 +532,21 @@
       copyBtn.className = "pg-btn";
       copyBtn.title = "Copy message";
       copyBtn.setAttribute("aria-label", "Copy message");
-      copyBtn.appendChild(
-        createSvgIcon([
-          {
-            tag: "rect",
-            attrs: {
-              x: "5.5",
-              y: "5.5",
-              width: "7.5",
-              height: "8.5",
-              rx: "1.5",
-              stroke: "currentColor",
-              "stroke-width": "1.4",
-            },
-          },
-          {
-            tag: "path",
-            attrs: {
-              d: "M10.5 5.5V3.5A1.5 1.5 0 0 0 9 2H4a1.5 1.5 0 0 0-1.5 1.5v6A1.5 1.5 0 0 0 4 11h1.5",
-              stroke: "currentColor",
-              "stroke-width": "1.4",
-            },
-          },
-        ])
-      );
+      copyBtn.appendChild(createCopyIcon());
       copyBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        void copyMessageToClipboard(message.text, card);
+        void copyMessageToClipboard(message.text, () => {
+          timeEl.hidden = true;
+          copiedPill.hidden = false;
+          copyBtn.dataset.active = "copied";
+          copyBtn.replaceChildren(createCheckIcon());
+          setTimeout(() => {
+            timeEl.hidden = false;
+            copiedPill.hidden = true;
+            delete copyBtn.dataset.active;
+            copyBtn.replaceChildren(createCopyIcon());
+          }, 1400);
+        });
       });
       controls.appendChild(copyBtn);
     }
@@ -369,27 +556,53 @@
     closeBtn.className = "pg-btn";
     closeBtn.title = "Dismiss notification";
     closeBtn.setAttribute("aria-label", "Dismiss notification");
-    closeBtn.appendChild(
-      createSvgIcon([
-        {
-          tag: "path",
-          attrs: {
-            d: "M4.2 4.2L11.8 11.8M11.8 4.2L4.2 11.8",
-            stroke: "currentColor",
-            "stroke-width": "1.6",
-            "stroke-linecap": "round",
-          },
-        },
-      ])
-    );
+    closeBtn.appendChild(createCloseIcon());
     closeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      dismissCard(message.id);
+      dismissCard(message.id, { notifyBackground: true });
     });
     controls.appendChild(closeBtn);
 
-    headerLine.appendChild(controls);
-    main.appendChild(headerLine);
+    topHeader.appendChild(controls);
+    card.appendChild(topHeader);
+
+    // Body Row: [Avatar 34x34] | [1px Hairline Divider] | [Sender + Context + Message]
+    const bodyRow = document.createElement("div");
+    bodyRow.className = "pg-body-row";
+
+    if (settings.showAvatar) {
+      const avatarCol = document.createElement("div");
+      avatarCol.className = "pg-avatar-col";
+
+      if (message.avatar) {
+        const img = document.createElement("img");
+        img.className = "pg-avatar-img";
+        img.src = message.avatar;
+        img.alt = "";
+        avatarCol.appendChild(img);
+      } else {
+        const initials = document.createElement("div");
+        initials.className = "pg-avatar-initials";
+        initials.textContent = computeInitials(displaySender);
+        avatarCol.appendChild(initials);
+      }
+
+      const divider = document.createElement("div");
+      divider.className = "pg-divider";
+
+      bodyRow.appendChild(avatarCol);
+      bodyRow.appendChild(divider);
+    }
+
+    const main = document.createElement("div");
+    main.className = "pg-main";
+
+    if (settings.showSender) {
+      const senderEl = document.createElement("div");
+      senderEl.className = "pg-sender";
+      senderEl.textContent = displaySender;
+      main.appendChild(senderEl);
+    }
 
     if (settings.showChatName && message.chatName && message.chatName !== displaySender) {
       const chatEl = document.createElement("div");
@@ -424,12 +637,281 @@
       }
     }
 
-    row.appendChild(main);
-    card.appendChild(row);
+    bodyRow.appendChild(main);
+    card.appendChild(bodyRow);
+
+    card.addEventListener("click", () => {
+      handleCardClick(message);
+    });
+
     return card;
   }
 
-  async function copyMessageToClipboard(text, card) {
+  /* -------------------------------------------------------------------------- */
+  /* Floating Glass Chat Popup (Matches GlassChatPopupView.swift)               */
+  /* -------------------------------------------------------------------------- */
+
+  function positionChatPopupElement(el) {
+    if (!el) return;
+    const pos = settings.position || "bottom-right";
+    const margin = Math.max(12, Math.min(48, Number(settings.edgeMargin) || 20));
+    const hasCards = activeCards.size > 0;
+    const offsetX = hasCards ? 332 : 0;
+
+    el.style.left = "auto";
+    el.style.right = "auto";
+    el.style.top = "auto";
+    el.style.bottom = "auto";
+    el.style.transform = "none";
+
+    if (pos === "bottom-left" || pos === "top-left") {
+      el.style.left = `${margin + offsetX}px`;
+    } else {
+      el.style.right = `${margin + offsetX}px`;
+    }
+
+    if (pos === "top-right" || pos === "top-left") {
+      el.style.top = `${margin}px`;
+    } else if (pos === "center-right") {
+      el.style.top = "50%";
+      el.style.transform = "translateY(-50%)";
+    } else {
+      el.style.bottom = `${margin}px`;
+    }
+  }
+
+  function closeChatPopup() {
+    if (chatPopupEl && chatPopupEl.parentNode) {
+      chatPopupEl.parentNode.removeChild(chatPopupEl);
+    }
+    chatPopupEl = null;
+    activeChatMessage = null;
+  }
+
+  async function openChatPopup(message) {
+    await ensureOverlayMounted();
+    if (!shadowRoot) return;
+
+    activeChatMessage = message;
+    let entries = localChatCache.get(chatKey(message)) || [];
+    const bgRes = await safeSendBackgroundMessage({
+      type: "content_get_chat_history",
+      message,
+    });
+    if (bgRes?.ok && Array.isArray(bgRes.entries) && bgRes.entries.length > 0) {
+      entries = bgRes.entries;
+      localChatCache.set(chatKey(message), entries);
+    } else if (entries.length === 0 && message.text) {
+      entries = [
+        {
+          id: message.id,
+          sender: message.sender || null,
+          text: message.text,
+          timestamp: message.timestamp || null,
+          isOutgoing: false,
+          isTest: Boolean(message.isTest),
+        },
+      ];
+    }
+
+    renderChatPopup(message, entries);
+  }
+
+  function renderChatPopup(message, entries) {
+    if (!shadowRoot) return;
+    closeChatPopup();
+    activeChatMessage = message;
+
+    const chatTitle = message.chatName && message.chatName !== "Global Notification"
+      ? message.chatName
+      : message.sender || "WhatsApp Chat";
+    const subtitle =
+      message.sender && message.chatName && message.sender !== message.chatName
+        ? message.sender
+        : "Session Messages";
+
+    const popup = document.createElement("section");
+    popup.className = "pg-chat-popup";
+    if (stackContainer?.dataset.animations === "on") {
+      popup.classList.add("pg-entering");
+    }
+    popup.dataset.theme = settings.theme === "light" ? "light" : "dark";
+    popup.setAttribute("aria-label", `Chat popup: ${chatTitle}`);
+
+    // Header
+    const header = document.createElement("header");
+    header.className = "pg-chat-header";
+
+    const avatar = document.createElement("div");
+    avatar.className = "pg-chat-avatar";
+    avatar.textContent = computeInitials(chatTitle);
+    header.appendChild(avatar);
+
+    const meta = document.createElement("div");
+    meta.className = "pg-chat-meta";
+
+    const titleRow = document.createElement("div");
+    titleRow.className = "pg-chat-title-row";
+
+    const titleEl = document.createElement("span");
+    titleEl.className = "pg-chat-title";
+    titleEl.textContent = chatTitle;
+    titleRow.appendChild(titleEl);
+
+    if (message.isTest) {
+      const pill = document.createElement("span");
+      pill.className = "pg-test-pill";
+      pill.textContent = "TEST";
+      titleRow.appendChild(pill);
+    }
+
+    const subtitleEl = document.createElement("div");
+    subtitleEl.className = "pg-chat-subtitle";
+    subtitleEl.textContent = subtitle;
+
+    meta.appendChild(titleRow);
+    meta.appendChild(subtitleEl);
+    header.appendChild(meta);
+
+    const controls = document.createElement("div");
+    controls.className = "pg-controls";
+
+    const refreshBtn = document.createElement("button");
+    refreshBtn.type = "button";
+    refreshBtn.className = "pg-btn";
+    refreshBtn.title = "Refresh messages";
+    refreshBtn.setAttribute("aria-label", "Refresh messages");
+    refreshBtn.appendChild(
+      createSvgIcon([
+        {
+          tag: "path",
+          attrs: {
+            d: "M12.5 8a4.5 4.5 0 1 1-1.2-3.05M12.5 2.5v2.7H9.8",
+            stroke: "currentColor",
+            "stroke-width": "1.35",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round",
+          },
+        },
+      ])
+    );
+    refreshBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      void openChatPopup(message);
+    });
+    controls.appendChild(refreshBtn);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "pg-btn";
+    closeBtn.title = "Close chat popup";
+    closeBtn.setAttribute("aria-label", "Close chat popup");
+    closeBtn.appendChild(createCloseIcon());
+    closeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeChatPopup();
+    });
+    controls.appendChild(closeBtn);
+
+    header.appendChild(controls);
+    popup.appendChild(header);
+
+    // Message List
+    const body = document.createElement("div");
+    body.className = "pg-chat-messages";
+
+    if (!entries || entries.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "pg-chat-empty";
+      empty.textContent = "No accessible messages captured for this chat yet.";
+      body.appendChild(empty);
+    } else {
+      for (const entry of entries) {
+        const bRow = document.createElement("div");
+        bRow.className = "pg-bubble-row";
+
+        const bubble = document.createElement("div");
+        bubble.className = "pg-bubble";
+
+        if (entry.sender && entry.sender !== chatTitle) {
+          const senderTag = document.createElement("span");
+          senderTag.className = "pg-bubble-sender";
+          senderTag.textContent = entry.sender;
+          bubble.appendChild(senderTag);
+        }
+
+        const msgText = document.createElement("p");
+        msgText.className = "pg-bubble-text";
+        msgText.textContent = entry.text;
+        bubble.appendChild(msgText);
+
+        const bMeta = document.createElement("div");
+        bMeta.className = "pg-bubble-meta";
+
+        const timeSpan = document.createElement("span");
+        timeSpan.className = "pg-bubble-time";
+        timeSpan.textContent = entry.timestamp || "";
+        bMeta.appendChild(timeSpan);
+
+        const copyBubbleBtn = document.createElement("button");
+        copyBubbleBtn.type = "button";
+        copyBubbleBtn.className = "pg-bubble-copy";
+        copyBubbleBtn.textContent = "Copy";
+        copyBubbleBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          void copyMessageToClipboard(entry.text, () => {
+            copyBubbleBtn.textContent = "Copied ✓";
+            copyBubbleBtn.dataset.copied = "true";
+            setTimeout(() => {
+              copyBubbleBtn.textContent = "Copy";
+              delete copyBubbleBtn.dataset.copied;
+            }, 1200);
+          });
+        });
+        bMeta.appendChild(copyBubbleBtn);
+
+        bubble.appendChild(bMeta);
+        bRow.appendChild(bubble);
+        body.appendChild(bRow);
+      }
+    }
+    popup.appendChild(body);
+
+    // Footer
+    const footer = document.createElement("footer");
+    footer.className = "pg-chat-footer";
+
+    const privacy = document.createElement("span");
+    privacy.className = "pg-chat-privacy";
+    privacy.textContent = "Local-only · No message history saved";
+    footer.appendChild(privacy);
+
+    const openWaBtn = document.createElement("button");
+    openWaBtn.type = "button";
+    openWaBtn.className = "pg-open-wa-pill";
+    openWaBtn.appendChild(createOpenIcon());
+    const openWaText = document.createElement("span");
+    openWaText.textContent = "Open in WhatsApp";
+    openWaBtn.appendChild(openWaText);
+    openWaBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      triggerOpenWhatsApp(message);
+    });
+    footer.appendChild(openWaBtn);
+
+    popup.appendChild(footer);
+
+    chatPopupEl = popup;
+    positionChatPopupElement(popup);
+    shadowRoot.appendChild(popup);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /* Clipboard Helper                                                           */
+  /* -------------------------------------------------------------------------- */
+
+  async function copyMessageToClipboard(text, onSuccess) {
     let copied = false;
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
       try {
@@ -456,14 +938,8 @@
       }
     }
 
-    if (copied && card) {
-      const existing = card.querySelector(".pg-copied-badge");
-      if (existing) existing.remove();
-      const badge = document.createElement("span");
-      badge.className = "pg-copied-badge";
-      badge.textContent = "Copied";
-      card.appendChild(badge);
-      setTimeout(() => badge.remove(), 1400);
+    if (copied && typeof onSuccess === "function") {
+      onSuccess();
     }
   }
 
@@ -478,12 +954,12 @@
     }
     const seconds = Number(settings.autoDismissSeconds);
     if (!Number.isFinite(seconds) || seconds <= 0) {
-      return; // 0 means stay until manually closed
+      return;
     }
 
     record.startedAt = Date.now();
     record.timerId = setTimeout(() => {
-      dismissCard(record.id);
+      dismissCard(record.id, { notifyBackground: false });
     }, record.remainingMs);
   }
 
@@ -496,7 +972,7 @@
     }
   }
 
-  function dismissCard(id) {
+  function dismissCard(id, { notifyBackground = false } = {}) {
     const record = activeCards.get(id);
     if (!record || record.exiting) {
       return;
@@ -508,6 +984,13 @@
       record.timerId = null;
     }
 
+    if (notifyBackground && record.message) {
+      void safeSendBackgroundMessage({
+        type: "content_dismiss_notification",
+        message: record.message,
+      });
+    }
+
     const finalizeRemoval = () => {
       if (record.element.parentNode) {
         record.element.parentNode.removeChild(record.element);
@@ -515,6 +998,9 @@
       activeCards.delete(id);
       drainQueue();
       updateClearAllBar();
+      if (chatPopupEl) {
+        positionChatPopupElement(chatPopupEl);
+      }
     };
 
     const animationsOn = stackContainer?.dataset.animations === "on";
@@ -526,12 +1012,20 @@
     record.element.classList.remove("pg-entering");
     record.element.classList.add("pg-exiting");
     record.element.addEventListener("animationend", finalizeRemoval, { once: true });
-    // Safety fallback if animationend does not fire (e.g., background tab).
-    setTimeout(finalizeRemoval, 360);
+    setTimeout(finalizeRemoval, 340);
   }
 
-  async function enqueueNotification(message) {
-    await ensureOverlayMounted();
+  async function enqueueNotification(message, cssText = null, chatHistory = null) {
+    await ensureOverlayMounted(cssText);
+    recordLocalChat(message);
+    if (Array.isArray(chatHistory) && chatHistory.length > 0) {
+      localChatCache.set(chatKey(message), chatHistory);
+    }
+
+    if (activeChatMessage && chatKey(activeChatMessage) === chatKey(message)) {
+      renderChatPopup(activeChatMessage, localChatCache.get(chatKey(message)) || []);
+    }
+
     if (activeCards.has(message.id)) {
       return;
     }
@@ -554,6 +1048,7 @@
     const durationMs = Number.isFinite(rawSec) && rawSec > 0 ? Math.max(1500, rawSec * 1000) : 0;
     const record = {
       id: message.id,
+      message,
       element: card,
       timerId: null,
       startedAt: Date.now(),
@@ -575,6 +1070,9 @@
 
     scheduleAutoDismiss(record);
     updateClearAllBar();
+    if (chatPopupEl) {
+      positionChatPopupElement(chatPopupEl);
+    }
     playSubtleChime();
   }
 
@@ -607,12 +1105,16 @@
           if (msg.settings) {
             settings = { ...settings, ...msg.settings };
           }
-          void ensureOverlayMounted().then(() => sendResponse({ ok: true }));
+          void ensureOverlayMounted(msg.cssText || null).then(() => sendResponse({ ok: true }));
           return true;
 
         case "pingglass_settings":
           if (msg.settings) {
             settings = { ...settings, ...msg.settings };
+            if (msg.cssText && styleEl) {
+              styleEl.textContent = msg.cssText;
+              stylesLoaded = true;
+            }
             applyContainerSettings();
           }
           sendResponse({ ok: true });
@@ -623,10 +1125,19 @@
             settings = { ...settings, ...msg.settings };
           }
           if (msg.message) {
-            void enqueueNotification(msg.message).then(() => sendResponse({ ok: true }));
+            void enqueueNotification(msg.message, msg.cssText || null, msg.chatHistory || null).then(() =>
+              sendResponse({ ok: true })
+            );
             return true;
           }
           sendResponse({ ok: false });
+          return false;
+
+        case "pingglass_dismiss":
+          if (msg.id) {
+            dismissCard(msg.id, { notifyBackground: false });
+          }
+          sendResponse({ ok: true });
           return false;
 
         case "pingglass_cleanup":
@@ -635,7 +1146,7 @@
           return false;
 
         case "pingglass_clear_all":
-          clearAllNotifications();
+          clearAllNotifications({ notifyBackground: false });
           sendResponse({ ok: true });
           return false;
 

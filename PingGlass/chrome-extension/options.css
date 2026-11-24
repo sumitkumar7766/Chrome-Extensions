@@ -1,9 +1,9 @@
 :root {
-  --bg: #0b0f17;
-  --panel: #131a26;
-  --border: rgba(255, 255, 255, 0.1);
+  --bg: #12141a;
+  --panel: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.14);
   --text: #f8fafc;
-  --muted: #94a3b8;
+  --muted: rgba(255, 255, 255, 0.60);
   --accent: #25d366;
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
 }

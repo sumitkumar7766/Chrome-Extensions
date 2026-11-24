@@ -359,6 +359,9 @@ public struct HelperStatusSnapshot: Codable, Sendable, Equatable {
     public let sessionMessagesForwarded: Int
     public let globalNotificationsEnabled: Bool
     public let notificationsPaused: Bool
+    public let activeNotificationCount: Int
+    public let pauseSummary: String?
+    public let config: BridgeSettingsPayload?
     public let updatedAt: String
 
     public init(
@@ -376,6 +379,9 @@ public struct HelperStatusSnapshot: Codable, Sendable, Equatable {
         sessionMessagesForwarded: Int,
         globalNotificationsEnabled: Bool = true,
         notificationsPaused: Bool = false,
+        activeNotificationCount: Int = 0,
+        pauseSummary: String? = nil,
+        config: BridgeSettingsPayload? = nil,
         updatedAt: String = ISO8601DateFormatter().string(from: Date())
     ) {
         self.monitoringState = monitoringState
@@ -392,7 +398,42 @@ public struct HelperStatusSnapshot: Codable, Sendable, Equatable {
         self.sessionMessagesForwarded = sessionMessagesForwarded
         self.globalNotificationsEnabled = globalNotificationsEnabled
         self.notificationsPaused = notificationsPaused
+        self.activeNotificationCount = activeNotificationCount
+        self.pauseSummary = pauseSummary
+        self.config = config
         self.updatedAt = updatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case monitoringState, monitoringEnabled, whatsappRunning, whatsappActive
+        case whatsappBundleId, whatsappVersion, accessibilityGranted, observerAttached
+        case fallbackPollingActive, extractionMode, statusDetail, sessionMessagesForwarded
+        case globalNotificationsEnabled, notificationsPaused, activeNotificationCount
+        case pauseSummary, config, updatedAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            monitoringState: try c.decode(MonitoringLifecycleState.self, forKey: .monitoringState),
+            monitoringEnabled: try c.decode(Bool.self, forKey: .monitoringEnabled),
+            whatsappRunning: try c.decode(Bool.self, forKey: .whatsappRunning),
+            whatsappActive: try c.decode(Bool.self, forKey: .whatsappActive),
+            whatsappBundleId: try c.decodeIfPresent(String.self, forKey: .whatsappBundleId),
+            whatsappVersion: try c.decodeIfPresent(String.self, forKey: .whatsappVersion),
+            accessibilityGranted: try c.decode(Bool.self, forKey: .accessibilityGranted),
+            observerAttached: try c.decode(Bool.self, forKey: .observerAttached),
+            fallbackPollingActive: try c.decode(Bool.self, forKey: .fallbackPollingActive),
+            extractionMode: try c.decode(String.self, forKey: .extractionMode),
+            statusDetail: try c.decode(String.self, forKey: .statusDetail),
+            sessionMessagesForwarded: try c.decode(Int.self, forKey: .sessionMessagesForwarded),
+            globalNotificationsEnabled: try c.decodeIfPresent(Bool.self, forKey: .globalNotificationsEnabled) ?? true,
+            notificationsPaused: try c.decodeIfPresent(Bool.self, forKey: .notificationsPaused) ?? false,
+            activeNotificationCount: try c.decodeIfPresent(Int.self, forKey: .activeNotificationCount) ?? 0,
+            pauseSummary: try c.decodeIfPresent(String.self, forKey: .pauseSummary),
+            config: try c.decodeIfPresent(BridgeSettingsPayload.self, forKey: .config),
+            updatedAt: try c.decodeIfPresent(String.self, forKey: .updatedAt) ?? ISO8601DateFormatter().string(from: Date())
+        )
     }
 }
 
@@ -425,7 +466,7 @@ public struct BridgeEnvelope: Codable, Sendable {
     }
 }
 
-/// Partial settings payload sent from Chrome extension to Swift helper (backward-compatible).
+/// Partial settings payload shared between Chrome extension and Swift helper (backward-compatible).
 public struct BridgeSettingsPayload: Codable, Sendable, Equatable {
     public let monitoringEnabled: Bool?
     public let ambiguousDirectionPolicy: AmbiguousDirectionPolicy?
@@ -434,6 +475,22 @@ public struct BridgeSettingsPayload: Codable, Sendable, Equatable {
     public let globalNotificationsEnabled: Bool?
     public let chromeForwardingEnabled: Bool?
     public let notificationsPaused: Bool?
+    public let pauseMinutes: Int?
+    public let pausedIndefinitely: Bool?
+    public let animationEnabled: Bool?
+    public let soundEnabled: Bool?
+    public let autoDismissSeconds: Int?
+    public let maxVisibleNotifications: Int?
+    public let notificationPosition: NotificationPosition?
+    public let edgeMargin: Double?
+    public let appearanceMode: GlassAppearanceMode?
+    public let notificationClickAction: NotificationClickAction?
+    public let showAvatar: Bool?
+    public let showSender: Bool?
+    public let showChatName: Bool?
+    public let showTimestamp: Bool?
+    public let showPreview: Bool?
+    public let showCopyButton: Bool?
 
     public init(
         monitoringEnabled: Bool? = nil,
@@ -442,7 +499,23 @@ public struct BridgeSettingsPayload: Codable, Sendable, Equatable {
         fallbackPollingIntervalSeconds: Double? = nil,
         globalNotificationsEnabled: Bool? = nil,
         chromeForwardingEnabled: Bool? = nil,
-        notificationsPaused: Bool? = nil
+        notificationsPaused: Bool? = nil,
+        pauseMinutes: Int? = nil,
+        pausedIndefinitely: Bool? = nil,
+        animationEnabled: Bool? = nil,
+        soundEnabled: Bool? = nil,
+        autoDismissSeconds: Int? = nil,
+        maxVisibleNotifications: Int? = nil,
+        notificationPosition: NotificationPosition? = nil,
+        edgeMargin: Double? = nil,
+        appearanceMode: GlassAppearanceMode? = nil,
+        notificationClickAction: NotificationClickAction? = nil,
+        showAvatar: Bool? = nil,
+        showSender: Bool? = nil,
+        showChatName: Bool? = nil,
+        showTimestamp: Bool? = nil,
+        showPreview: Bool? = nil,
+        showCopyButton: Bool? = nil
     ) {
         self.monitoringEnabled = monitoringEnabled
         self.ambiguousDirectionPolicy = ambiguousDirectionPolicy
@@ -451,5 +524,21 @@ public struct BridgeSettingsPayload: Codable, Sendable, Equatable {
         self.globalNotificationsEnabled = globalNotificationsEnabled
         self.chromeForwardingEnabled = chromeForwardingEnabled
         self.notificationsPaused = notificationsPaused
+        self.pauseMinutes = pauseMinutes
+        self.pausedIndefinitely = pausedIndefinitely
+        self.animationEnabled = animationEnabled
+        self.soundEnabled = soundEnabled
+        self.autoDismissSeconds = autoDismissSeconds
+        self.maxVisibleNotifications = maxVisibleNotifications
+        self.notificationPosition = notificationPosition
+        self.edgeMargin = edgeMargin
+        self.appearanceMode = appearanceMode
+        self.notificationClickAction = notificationClickAction
+        self.showAvatar = showAvatar
+        self.showSender = showSender
+        self.showChatName = showChatName
+        self.showTimestamp = showTimestamp
+        self.showPreview = showPreview
+        self.showCopyButton = showCopyButton
     }
 }

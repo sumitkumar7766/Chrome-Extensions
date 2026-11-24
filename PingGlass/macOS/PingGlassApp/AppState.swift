@@ -123,8 +123,12 @@ final class AppState: ObservableObject {
         config = updated
     }
 
-    func clearAllNotifications() {
+    func clearAllNotifications(fromRemote: Bool = false) {
         notificationManager.dismissAll(animated: config.animationEnabled)
+        if !fromRemote && connectedBridgeClients > 0 {
+            ipcServer.broadcast(BridgeEnvelope(type: "clear_all_notifications"))
+        }
+        broadcastStatus()
     }
 
     var totalActiveAndQueuedNotifications: Int {
@@ -165,7 +169,7 @@ final class AppState: ObservableObject {
         let testMessage = WhatsAppMessage(
             id: "test-\(UUID().uuidString)",
             sender: "PingGlass Test",
-            chatName: "Preview notification",
+            chatName: "Global Notification",
             text: "Your global glass notification is working beautifully! ✨",
             timestamp: timeLabel,
             avatar: nil,
@@ -222,6 +226,30 @@ final class AppState: ObservableObject {
 
     func currentSnapshot() -> HelperStatusSnapshot {
         let proc = whatsappDetector.currentProcess
+        let syncedConfig = BridgeSettingsPayload(
+            monitoringEnabled: config.monitoringEnabled,
+            ambiguousDirectionPolicy: config.ambiguousDirectionPolicy,
+            maxPreviewLength: config.maxPreviewLength,
+            fallbackPollingIntervalSeconds: config.fallbackPollingIntervalSeconds,
+            globalNotificationsEnabled: config.globalNotificationsEnabled,
+            chromeForwardingEnabled: config.chromeForwardingEnabled,
+            notificationsPaused: isNotificationsPaused,
+            pausedIndefinitely: config.pausedIndefinitely,
+            animationEnabled: config.animationEnabled,
+            soundEnabled: config.soundEnabled,
+            autoDismissSeconds: config.notificationDurationSeconds,
+            maxVisibleNotifications: config.maxVisibleNotifications,
+            notificationPosition: config.notificationPosition,
+            edgeMargin: config.edgeMargin,
+            appearanceMode: config.appearanceMode,
+            notificationClickAction: config.notificationClickAction,
+            showAvatar: config.showAvatar,
+            showSender: config.showSender,
+            showChatName: config.showChatName,
+            showTimestamp: config.showTimestamp,
+            showPreview: config.showPreview,
+            showCopyButton: config.showCopyButton
+        )
         return HelperStatusSnapshot(
             monitoringState: lifecycleState,
             monitoringEnabled: config.monitoringEnabled,
@@ -236,7 +264,10 @@ final class AppState: ObservableObject {
             statusDetail: statusDetail,
             sessionMessagesForwarded: sessionMessagesForwarded,
             globalNotificationsEnabled: config.globalNotificationsEnabled,
-            notificationsPaused: isNotificationsPaused
+            notificationsPaused: isNotificationsPaused,
+            activeNotificationCount: totalActiveAndQueuedNotifications,
+            pauseSummary: pauseStatusSummary,
+            config: syncedConfig
         )
     }
 
@@ -450,7 +481,22 @@ final class AppState: ObservableObject {
         case "test_notification":
             sendTestNotification()
         case "clear_all_notifications":
-            clearAllNotifications()
+            clearAllNotifications(fromRemote: true)
+        case "dismiss_notification":
+            if let messageId = envelope.message?.id {
+                notificationManager.dismiss(id: messageId, animated: config.animationEnabled)
+                broadcastStatus()
+            }
+        case "open_whatsapp":
+            openWhatsAppDesktop(for: envelope.message)
+        case "pause_notifications":
+            if let minutes = envelope.settings?.pauseMinutes, minutes > 0 {
+                pauseNotifications(forMinutes: minutes)
+            } else if envelope.settings?.pausedIndefinitely == true {
+                pauseNotificationsIndefinitely()
+            } else {
+                resumeNotifications()
+            }
         case "settings_update":
             guard let payload = envelope.settings else { return }
             var updated = config
@@ -478,6 +524,42 @@ final class AppState: ObservableObject {
                     updated.pausedUntil = nil
                 }
             }
+            if let pausedIndef = payload.pausedIndefinitely {
+                updated.pausedIndefinitely = pausedIndef
+                if !pausedIndef {
+                    updated.pausedUntil = nil
+                }
+            }
+            if let anim = payload.animationEnabled {
+                updated.animationEnabled = anim
+            }
+            if let sound = payload.soundEnabled {
+                updated.soundEnabled = sound
+            }
+            if let dismiss = payload.autoDismissSeconds {
+                updated.notificationDurationSeconds = max(0, min(60, dismiss))
+            }
+            if let maxVis = payload.maxVisibleNotifications {
+                updated.maxVisibleNotifications = max(1, min(6, maxVis))
+            }
+            if let pos = payload.notificationPosition {
+                updated.notificationPosition = pos
+            }
+            if let margin = payload.edgeMargin {
+                updated.edgeMargin = max(12.0, min(64.0, margin))
+            }
+            if let appearance = payload.appearanceMode {
+                updated.appearanceMode = appearance
+            }
+            if let clickAction = payload.notificationClickAction {
+                updated.notificationClickAction = clickAction
+            }
+            if let v = payload.showAvatar { updated.showAvatar = v }
+            if let v = payload.showSender { updated.showSender = v }
+            if let v = payload.showChatName { updated.showChatName = v }
+            if let v = payload.showTimestamp { updated.showTimestamp = v }
+            if let v = payload.showPreview { updated.showPreview = v }
+            if let v = payload.showCopyButton { updated.showCopyButton = v }
             if updated != config {
                 config = updated
             }

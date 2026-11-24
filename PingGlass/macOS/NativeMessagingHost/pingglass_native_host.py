@@ -39,6 +39,9 @@ ALLOWED_INBOUND_FROM_CHROME = {
     "settings_update",
     "test_notification",
     "clear_all_notifications",
+    "dismiss_notification",
+    "open_whatsapp",
+    "pause_notifications",
     "launch_helper",
 }
 
@@ -46,6 +49,8 @@ ALLOWED_OUTBOUND_FROM_HELPER = {
     "connection_status",
     "monitoring_status",
     "incoming_message",
+    "clear_all_notifications",
+    "dismiss_notification",
     "pong",
     "error",
 }

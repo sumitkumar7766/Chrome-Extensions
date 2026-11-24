@@ -2,7 +2,9 @@
   "use strict";
 
   const BOOLEAN_KEYS = [
+    "chromeAutoOverlay",
     "notificationsEnabled",
+    "chromeForwardingEnabled",
     "notificationsPaused",
     "monitoringEnabled",
     "enableAnimation",
@@ -15,14 +17,17 @@
     "showCopyButton",
   ];
 
-  const NUMBER_KEYS = ["autoDismissSeconds", "maxVisible", "maxPreviewLength"];
-  const SELECT_KEYS = ["theme", "position", "ambiguousDirectionPolicy"];
+  const NUMBER_KEYS = ["autoDismissSeconds", "maxVisible", "edgeMargin", "maxPreviewLength"];
+  const SELECT_KEYS = ["theme", "position", "clickAction", "ambiguousDirectionPolicy"];
 
   const DEFAULTS = {
+    chromeAutoOverlay: true,
     notificationsEnabled: true,
+    chromeForwardingEnabled: true,
     monitoringEnabled: false,
     autoDismissSeconds: 0,
     maxVisible: 3,
+    edgeMargin: 20,
     showSender: true,
     showChatName: true,
     showAvatar: true,
@@ -31,6 +36,7 @@
     showCopyButton: true,
     position: "bottom-right",
     theme: "dark",
+    clickAction: "open_glass_chat_popup",
     enableAnimation: true,
     soundEnabled: false,
     notificationsPaused: false,
@@ -88,6 +94,7 @@
 
     payload.autoDismissSeconds = Math.max(0, Math.min(60, payload.autoDismissSeconds));
     payload.maxVisible = Math.max(1, Math.min(6, payload.maxVisible));
+    payload.edgeMargin = Math.max(12, Math.min(48, payload.edgeMargin));
     payload.maxPreviewLength = Math.max(60, Math.min(800, payload.maxPreviewLength));
     return payload;
   }

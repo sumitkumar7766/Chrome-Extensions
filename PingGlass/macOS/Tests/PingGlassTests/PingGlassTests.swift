@@ -491,4 +491,58 @@ final class PingGlassTests: XCTestCase {
         store.clearAll()
         XCTAssertEqual(store.messages(for: m1).count, 0)
     }
+
+    func testExtendedBridgeSettingsAndSnapshotRoundTrip() throws {
+        let payload = BridgeSettingsPayload(
+            monitoringEnabled: true,
+            ambiguousDirectionPolicy: .ignore,
+            maxPreviewLength: 280,
+            globalNotificationsEnabled: true,
+            chromeForwardingEnabled: true,
+            notificationsPaused: false,
+            pauseMinutes: 15,
+            pausedIndefinitely: false,
+            animationEnabled: true,
+            soundEnabled: false,
+            autoDismissSeconds: 0,
+            maxVisibleNotifications: 3,
+            notificationPosition: .bottomRight,
+            edgeMargin: 24,
+            appearanceMode: .dark,
+            notificationClickAction: .openGlassChatPopup,
+            showAvatar: true,
+            showSender: true,
+            showChatName: true,
+            showTimestamp: true,
+            showPreview: true,
+            showCopyButton: true
+        )
+        let snap = HelperStatusSnapshot(
+            monitoringState: .monitoringActive,
+            monitoringEnabled: true,
+            whatsappRunning: true,
+            whatsappActive: false,
+            whatsappBundleId: "net.whatsapp.WhatsApp",
+            whatsappVersion: "26.43.77",
+            accessibilityGranted: true,
+            observerAttached: true,
+            fallbackPollingActive: false,
+            extractionMode: "AXObserver + Live Sync",
+            statusDetail: "Observing WhatsApp Desktop via Accessibility APIs.",
+            sessionMessagesForwarded: 3,
+            globalNotificationsEnabled: true,
+            notificationsPaused: false,
+            activeNotificationCount: 1,
+            pauseSummary: "Active",
+            config: payload
+        )
+        let envelope = BridgeEnvelope(type: "monitoring_status", status: snap, helperConnected: true)
+        let data = try JSONEncoder().encode(envelope)
+        let decoded = try JSONDecoder().decode(BridgeEnvelope.self, from: data)
+        XCTAssertEqual(decoded.status?.activeNotificationCount, 1)
+        XCTAssertEqual(decoded.status?.pauseSummary, "Active")
+        XCTAssertEqual(decoded.status?.config?.notificationPosition, .bottomRight)
+        XCTAssertEqual(decoded.status?.config?.notificationClickAction, .openGlassChatPopup)
+        XCTAssertEqual(decoded.status?.config?.pauseMinutes, 15)
+    }
 }

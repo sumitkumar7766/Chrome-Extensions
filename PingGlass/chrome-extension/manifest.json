@@ -2,16 +2,27 @@
   "manifest_version": 3,
   "name": "PingGlass",
   "version": "1.0.0",
-  "description": "Displays floating glass WhatsApp Desktop notifications inside Chrome via a private local macOS Accessibility bridge.",
+  "description": "Displays floating liquid glass WhatsApp Desktop notifications inside Chrome and macOS via a private local Accessibility bridge.",
   "permissions": [
     "nativeMessaging",
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "PingGlass",
