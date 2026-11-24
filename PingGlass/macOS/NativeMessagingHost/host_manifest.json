@@ -1,0 +1,9 @@
+{
+  "name": "com.pingglass.bridge",
+  "description": "PingGlass native messaging bridge between WhatsApp Desktop macOS helper and Chrome extension",
+  "path": "__HOST_PATH__",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://__EXTENSION_ID__/"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "": {
+    "dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassPackageTests.build/PingGlassPackageTests.d",
+    "object": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassPackageTests.build/PingGlassPackageTests.o",
+    "swift-dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassPackageTests.build/master.swiftdeps"
+  },
+  "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassPackageTests.derived/runner.swift": {
+    "object": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassPackageTests.build/runner.swift.o",
+    "swiftmodule": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassPackageTests.build/runner~partial.swiftmodule",
+    "swift-dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassPackageTests.build/runner.swiftdeps",
+    "diagnostics": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassPackageTests.build/runner.dia"
+  }
+}

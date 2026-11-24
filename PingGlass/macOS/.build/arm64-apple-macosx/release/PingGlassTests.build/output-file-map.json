@@ -1,0 +1,13 @@
+{
+  "": {
+    "dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassTests.build/PingGlassTests.d",
+    "object": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassTests.build/PingGlassTests.o",
+    "swift-dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassTests.build/master.swiftdeps"
+  },
+  "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/Tests/PingGlassTests/PingGlassTests.swift": {
+    "object": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassTests.build/PingGlassTests.swift.o",
+    "swiftmodule": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassTests.build/PingGlassTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassTests.build/PingGlassTests.swiftdeps",
+    "diagnostics": "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassTests.build/PingGlassTests.dia"
+  }
+}

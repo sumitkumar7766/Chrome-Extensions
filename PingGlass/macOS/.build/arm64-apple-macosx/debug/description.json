@@ -1,0 +1,1057 @@
+{
+  "builtTestProducts" : [
+    {
+      "binaryPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.xctest/Contents/MacOS/PingGlassPackageTests",
+      "packagePath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS",
+      "productName" : "PingGlassPackageTests"
+    }
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.PingGlassApp-arm64-apple-macosx28.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/sources",
+      "importPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AccessibilityExtractor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AccessibilityMonitor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AppState.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/LaunchAtLoginManager.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/MessageFingerprint.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/MessageProcessor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Models/WhatsAppMessage.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/NativeMessagingClient.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/DisplayScreenLocator.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingNotificationPanel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlassNotificationCardView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlobalNotificationWindowManager.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/NotificationStackQueue.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PermissionManager.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PingGlassApp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/SettingsView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/StatusView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/WhatsAppDetector.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "PingGlassApp",
+      "moduleOutputPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules/PingGlassApp.swiftmodule",
+      "objects" : [
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AccessibilityExtractor.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AccessibilityMonitor.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AppState.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/LaunchAtLoginManager.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/MessageFingerprint.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/MessageProcessor.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/WhatsAppMessage.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NativeMessagingClient.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/DisplayScreenLocator.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingNotificationPanel.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/GlassNotificationCardView.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/GlobalNotificationWindowManager.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NotificationStackQueue.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/PermissionManager.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/PingGlassApp.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/SettingsView.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/StatusView.swift.o",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/WhatsAppDetector.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "PingGlassApp_main",
+        "-swift-version",
+        "5",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "macos"
+      ],
+      "outputFileMapPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AccessibilityExtractor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AccessibilityMonitor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AppState.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/LaunchAtLoginManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/MessageFingerprint.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/MessageProcessor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/WhatsAppMessage.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NativeMessagingClient.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/DisplayScreenLocator.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingNotificationPanel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/GlassNotificationCardView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/GlobalNotificationWindowManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NotificationStackQueue.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/PermissionManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/PingGlassApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/SettingsView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/StatusView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/WhatsAppDetector.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules/PingGlassApp.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AccessibilityExtractor.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AccessibilityMonitor.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AppState.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/LaunchAtLoginManager.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/MessageFingerprint.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/MessageProcessor.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Models/WhatsAppMessage.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/NativeMessagingClient.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/DisplayScreenLocator.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingNotificationPanel.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlassNotificationCardView.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlobalNotificationWindowManager.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/NotificationStackQueue.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PermissionManager.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PingGlassApp.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/SettingsView.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/StatusView.swift",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/WhatsAppDetector.swift"
+      ],
+      "tempsPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.PingGlassPackageTests-arm64-apple-macosx28.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build/sources",
+      "importPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.derived/runner.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules/PingGlassTests.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "PingGlassPackageTests",
+      "moduleOutputPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules/PingGlassPackageTests.swiftmodule",
+      "objects" : [
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build/runner.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build/include/PingGlassPackageTests-Swift.h",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "macos"
+      ],
+      "outputFileMapPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules/PingGlassPackageTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.derived/runner.swift"
+      ],
+      "tempsPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.PingGlassTests-arm64-apple-macosx28.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassTests.build/sources",
+      "importPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/Tests/PingGlassTests/PingGlassTests.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlass"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "PingGlassTests",
+      "moduleOutputPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules/PingGlassTests.swiftmodule",
+      "objects" : [
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassTests.build/PingGlassTests.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-swift-version",
+        "5",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "macos"
+      ],
+      "outputFileMapPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassTests.build/PingGlassTests.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules/PingGlassTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/Tests/PingGlassTests/PingGlassTests.swift"
+      ],
+      "tempsPath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassTests.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "PingGlassApp" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "PingGlassApp",
+      "-package-name",
+      "macos",
+      "-c",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AccessibilityExtractor.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AccessibilityMonitor.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AppState.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/LaunchAtLoginManager.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/MessageFingerprint.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/MessageProcessor.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Models/WhatsAppMessage.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/NativeMessagingClient.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/DisplayScreenLocator.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingNotificationPanel.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlassNotificationCardView.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlobalNotificationWindowManager.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/NotificationStackQueue.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PermissionManager.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PingGlassApp.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/SettingsView.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/StatusView.swift",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/WhatsAppDetector.swift",
+      "-I",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "PingGlassApp_main",
+      "-swift-version",
+      "5",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "macos",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "PingGlassPackageTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "PingGlassPackageTests",
+      "-package-name",
+      "macos",
+      "-c",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.derived/runner.swift",
+      "-I",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build/include/PingGlassPackageTests-Swift.h",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "macos",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "PingGlassTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "PingGlassTests",
+      "-package-name",
+      "macos",
+      "-c",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/Tests/PingGlassTests/PingGlassTests.swift",
+      "-I",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-swift-version",
+      "5",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "macos",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "PingGlassApp" : [
+
+    ],
+    "PingGlassPackageTests" : [
+      "PingGlassTests",
+      "PingGlassApp"
+    ],
+    "PingGlassTests" : [
+      "PingGlassApp"
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+    "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.derived/runner.swift" : {
+      "inputs" : [
+
+      ],
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.derived/runner.swift"
+        }
+      ]
+    }
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlass-entitlement.plist" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<entitlement-plist>"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<com.apple.security.get-task-allow>"
+        }
+      ],
+      "outputFilePath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlass-entitlement.plist"
+    },
+    "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlass.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AccessibilityExtractor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AccessibilityMonitor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AppState.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/DisplayScreenLocator.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingNotificationPanel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/GlassNotificationCardView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/GlobalNotificationWindowManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/LaunchAtLoginManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/MessageFingerprint.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/MessageProcessor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NativeMessagingClient.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NotificationStackQueue.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/PermissionManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/PingGlassApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/SettingsView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/StatusView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/WhatsAppDetector.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/WhatsAppMessage.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlass.product/Objects.LinkFileList"
+    },
+    "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AccessibilityExtractor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AccessibilityMonitor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/AppState.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/LaunchAtLoginManager.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/MessageFingerprint.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/MessageProcessor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Models/WhatsAppMessage.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/NativeMessagingClient.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/DisplayScreenLocator.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/FloatingNotificationPanel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlassNotificationCardView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/GlobalNotificationWindowManager.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/Notifications/NotificationStackQueue.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PermissionManager.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/PingGlassApp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/SettingsView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/StatusView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/PingGlassApp/WhatsAppDetector.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/sources"
+    },
+    "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.derived/runner.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build/sources"
+    },
+    "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AccessibilityExtractor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AccessibilityMonitor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/AppState.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/DisplayScreenLocator.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/FloatingNotificationPanel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/GlassNotificationCardView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/GlobalNotificationWindowManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/LaunchAtLoginManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/MessageFingerprint.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/MessageProcessor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NativeMessagingClient.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/NotificationStackQueue.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/PermissionManager.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/PingGlassApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/SettingsView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/StatusView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/WhatsAppDetector.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassApp.build/WhatsAppMessage.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassTests.build/PingGlassTests.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassPackageTests.product/Objects.LinkFileList"
+    },
+    "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/Tests/PingGlassTests/PingGlassTests.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/PingGlassTests.build/sources"
+    },
+    "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}

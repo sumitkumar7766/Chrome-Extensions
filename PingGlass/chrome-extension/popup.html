@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PingGlass</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <img src="icons/icon48.png" width="26" height="26" alt="PingGlass logo" class="brand-icon">
+        <div class="brand-meta">
+          <h1 class="brand-title">PingGlass</h1>
+          <span id="overall-badge" class="overall-badge" data-tone="neutral">Checking status…</span>
+        </div>
+      </div>
+
+      <button id="settings-btn" type="button" class="btn-icon" title="Settings" aria-label="Open settings">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 10.25A2.25 2.25 0 1 0 8 5.75a2.25 2.25 0 0 0 0 4.5Z" stroke="currentColor" stroke-width="1.35"/>
+          <path d="M13.2 9.45a1.1 1.1 0 0 0 .22 1.21l.04.04a1.33 1.33 0 1 1-1.88 1.88l-.04-.04a1.1 1.1 0 0 0-1.21-.22 1.1 1.1 0 0 0-.67 1.01v.11a1.33 1.33 0 1 1-2.66 0v-.06a1.1 1.1 0 0 0-.72-1.01 1.1 1.1 0 0 0-1.21.22l-.04.04a1.33 1.33 0 1 1-1.88-1.88l.04-.04a1.1 1.1 0 0 0 .22-1.21 1.1 1.1 0 0 0-1.01-.67h-.11a1.33 1.33 0 1 1 0-2.66h.06a1.1 1.1 0 0 0 1.01-.72 1.1 1.1 0 0 0-.22-1.21l-.04-.04a1.33 1.33 0 1 1 1.88-1.88l.04.04a1.1 1.1 0 0 0 1.21.22h.05a1.1 1.1 0 0 0 .67-1.01v-.11a1.33 1.33 0 1 1 2.66 0v.06a1.1 1.1 0 0 0 .67 1.01 1.1 1.1 0 0 0 1.21-.22l.04-.04a1.33 1.33 0 1 1 1.88 1.88l-.04.04a1.1 1.1 0 0 0-.22 1.21v.05a1.1 1.1 0 0 0 1.01.67h.11a1.33 1.33 0 1 1 0 2.66h-.06a1.1 1.1 0 0 0-1.01.67Z" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </button>
+    </header>
+
+    <main class="content">
+      <!-- Real Status Card -->
+      <section class="card status-card" aria-label="System connection status">
+        <div class="status-row">
+          <span class="status-label">Native Bridge</span>
+          <span id="bridge-status" class="status-value" data-dot="muted">Disconnected</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">WhatsApp Desktop</span>
+          <span id="whatsapp-status" class="status-value" data-dot="muted">Unknown</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Accessibility</span>
+          <span id="accessibility-status" class="status-value" data-dot="muted">Unknown</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Monitoring</span>
+          <span id="monitoring-status" class="status-value" data-dot="muted">Inactive</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">macOS Global Glass</span>
+          <span id="desktop-overlay-status" class="status-value" data-dot="muted">Unknown</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Chrome Tab Overlay</span>
+          <span id="overlay-status" class="status-value" data-dot="muted">Inactive</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Session Messages</span>
+          <span id="session-count" class="status-value">0</span>
+        </div>
+      </section>
+
+      <!-- Contextual Recovery Box -->
+      <section id="recovery-box" class="recovery-box" hidden>
+        <h2 id="recovery-title" class="recovery-title">Setup Required</h2>
+        <p id="recovery-desc" class="recovery-desc"></p>
+        <code id="recovery-cmd" class="recovery-cmd" hidden></code>
+        <div class="recovery-actions">
+          <button id="copy-id-btn" type="button" class="btn btn-sm btn-secondary" hidden>Copy Extension ID</button>
+          <button id="reconnect-btn" type="button" class="btn btn-sm btn-secondary" hidden>Reconnect Bridge</button>
+        </div>
+      </section>
+
+      <!-- Monitoring Controls -->
+      <section class="actions-grid" aria-label="Controls">
+        <button id="start-monitoring-btn" type="button" class="btn btn-primary">
+          Start Monitoring
+        </button>
+        <button id="pause-monitoring-btn" type="button" class="btn btn-secondary">
+          Pause Monitoring
+        </button>
+
+        <button id="toggle-overlay-btn" type="button" class="btn btn-accent span-2">
+          Enable Glass Overlay on This Tab
+        </button>
+
+        <button id="test-notification-btn" type="button" class="btn btn-secondary">
+          Test Notification
+        </button>
+        <button id="open-settings-btn" type="button" class="btn btn-secondary">
+          Settings
+        </button>
+        <button id="open-app-btn" type="button" class="btn btn-secondary span-2">
+          Open PingGlass macOS App
+        </button>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span class="privacy-note">Local-only · No message history stored</span>
+      <span id="ext-id-label" class="ext-id"></span>
+    </footer>
+
+    <div id="popup-toast" class="popup-toast" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+module PingGlassPackageTests {
+    header "/Users/sumitkumar776693/Desktop/Project/extension/PingGlass/macOS/.build/arm64-apple-macosx/release/PingGlassPackageTests.build/include/PingGlassPackageTests-Swift.h"
+}
