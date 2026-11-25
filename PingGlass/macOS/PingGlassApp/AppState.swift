@@ -124,6 +124,7 @@ final class AppState: ObservableObject {
     }
 
     func clearAllNotifications(fromRemote: Bool = false) {
+        sessionMessagesForwarded = 0
         notificationManager.dismissAll(animated: config.animationEnabled)
         if !fromRemote && connectedBridgeClients > 0 {
             ipcServer.broadcast(BridgeEnvelope(type: "clear_all_notifications"))
@@ -391,6 +392,10 @@ final class AppState: ObservableObject {
         notificationManager.onCountsChanged = { [weak self] activeCount, queuedCount in
             self?.visibleNotificationCount = activeCount
             self?.queuedNotificationCount = queuedCount
+        }
+
+        notificationManager.onClearAllRequested = { [weak self] in
+            self?.clearAllNotifications()
         }
 
         whatsappDetector.onProcessChanged = { [weak self] _ in

@@ -4,8 +4,8 @@ import SwiftUI
 /// Floating native glass chat & quick-reply popup displaying session + live AX bubbles
 /// and allowing replies directly through WhatsApp Desktop's accessible composer.
 final class GlassChatPopupView: NSView {
-    static let popupSize = CGSize(width: 318, height: 356)
-    static let cornerRadius: CGFloat = 18.0
+    static let popupSize = CGSize(width: 342, height: 414)
+    static let cornerRadius: CGFloat = 20.0
 
     private let backdropView = LiquidGlassBackdropView(cornerRadius: GlassChatPopupView.cornerRadius, showLeftAccent: true)
     private let hostingView: NSHostingView<FloatingChatPopupContent>
@@ -128,10 +128,15 @@ private struct FloatingChatPopupContent: View {
     let onClose: () -> Void
 
     @State private var copiedId: String?
+    @State private var copiedAll = false
+    @State private var hoveredBubbleId: String?
     @State private var draftReply: String = ""
     @State private var isSending = false
     @State private var replyStatusText: String?
     @State private var replyIsError = false
+    @FocusState private var isComposerFocused: Bool
+
+    private let quickReplies = ["👍", "Ok", "On my way", "Call soon"]
 
     private var isDark: Bool { config.appearanceMode == .dark }
     private var primaryText: Color { isDark ? .white : Color(red: 0.06, green: 0.09, blue: 0.16) }
@@ -143,62 +148,108 @@ private struct FloatingChatPopupContent: View {
         VStack(spacing: 0) {
             headerBar
 
-            Divider().opacity(0.25)
+            Divider().opacity(0.24)
 
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 8) {
                         if messages.isEmpty {
-                            Text("No accessible messages captured for this chat yet.")
-                                .font(.caption)
-                                .foregroundStyle(mutedText)
-                                .padding(.top, 40)
+                            VStack(spacing: 8) {
+                                Text("No accessible messages captured for this chat yet.")
+                                    .font(.caption)
+                                    .foregroundStyle(mutedText)
+                                    .multilineTextAlignment(.center)
+                                openHistoryButton
+                            }
+                            .padding(.top, 44)
+                            .padding(.horizontal, 18)
                         } else {
                             ForEach(messages) { entry in
                                 bubbleRow(entry)
                                     .id(entry.id)
                             }
+
+                            if !isLiveAXSynced && !isTestChat && messages.count <= 1 {
+                                openHistoryButton
+                                    .padding(.top, 4)
+                            }
                         }
                     }
-                    .padding(11)
+                    .padding(12)
                 }
                 .onAppear {
-                    if let last = messages.last {
-                        proxy.scrollTo(last.id, anchor: .bottom)
+                    scrollToBottom(proxy: proxy, animated: false)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                        isComposerFocused = true
                     }
                 }
                 .onChange(of: messages.count) { _ in
-                    if let last = messages.last {
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
-                    }
+                    scrollToBottom(proxy: proxy, animated: true)
+                }
+                .onChange(of: messages.last?.id) { _ in
+                    scrollToBottom(proxy: proxy, animated: true)
                 }
             }
 
-            Divider().opacity(0.25)
+            Divider().opacity(0.24)
 
             composerFooterBar
         }
         .frame(width: GlassChatPopupView.popupSize.width, height: GlassChatPopupView.popupSize.height)
     }
 
+    private func scrollToBottom(proxy: ScrollViewProxy, animated: Bool) {
+        guard let last = messages.last else { return }
+        if animated {
+            withAnimation(.easeOut(duration: 0.2)) {
+                proxy.scrollTo(last.id, anchor: .bottom)
+            }
+        } else {
+            proxy.scrollTo(last.id, anchor: .bottom)
+        }
+    }
+
+    private var openHistoryButton: some View {
+        Button(action: onOpenWhatsApp) {
+            HStack(spacing: 5) {
+                Image(systemName: "arrow.up.forward.square")
+                    .font(.system(size: 10, weight: .semibold))
+                Text("Open in WhatsApp to sync full chat")
+                    .font(.system(size: 10.5, weight: .medium))
+            }
+            .foregroundStyle(whatsappGreen)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(whatsappGreen.opacity(isDark ? 0.13 : 0.10), in: Capsule())
+            .overlay(Capsule().stroke(whatsappGreen.opacity(0.28), lineWidth: 0.75))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var headerBar: some View {
         HStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(isDark ? Color.black.opacity(0.26) : whatsappGreen.opacity(0.14))
-                Text(initials(from: chatTitle))
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .foregroundStyle(isDark ? .white : Color(red: 0.02, green: 0.45, blue: 0.25))
-            }
-            .frame(width: 30, height: 30)
-            .overlay(Circle().stroke(whatsappGreen, lineWidth: 1.2))
+            ZStack(alignment: .bottomTrailing) {
+                ZStack {
+                    Circle()
+                        .fill(isDark ? Color.black.opacity(0.28) : whatsappGreen.opacity(0.14))
+                    Text(initials(from: chatTitle))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(isDark ? .white : Color(red: 0.02, green: 0.45, blue: 0.25))
+                }
+                .frame(width: 32, height: 32)
+                .overlay(Circle().stroke(whatsappGreen.opacity(0.85), lineWidth: 1.2))
 
-            VStack(alignment: .leading, spacing: 1) {
+                Circle()
+                    .fill(whatsappGreen)
+                    .frame(width: 9, height: 9)
+                    .overlay(Circle().stroke(isDark ? Color(white: 0.12) : Color.white, lineWidth: 1.3))
+                    .offset(x: 1, y: 1)
+            }
+
+            VStack(alignment: .leading, spacing: 1.5) {
                 HStack(spacing: 5) {
                     Text(chatTitle)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 13.5, weight: .semibold))
                         .foregroundStyle(primaryText)
                         .lineLimit(1)
                     if isTestChat {
@@ -211,15 +262,29 @@ private struct FloatingChatPopupContent: View {
                     }
                 }
 
-                Text(subtitle ?? (isLiveAXSynced ? "Live WhatsApp Chat" : "Session Chat"))
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(mutedText)
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(isLiveAXSynced ? whatsappGreen : mutedText.opacity(0.65))
+                        .frame(width: 5.5, height: 5.5)
+                    Text(headerSubtitleText)
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(mutedText)
+                        .lineLimit(1)
+                }
             }
 
-            Spacer()
+            Spacer(minLength: 4)
 
             HStack(spacing: 4) {
+                if !messages.isEmpty {
+                    GlassIconActionButton(
+                        systemName: copiedAll ? "checkmark" : "doc.on.clipboard",
+                        tooltip: copiedAll ? "Copied chat" : "Copy full conversation",
+                        isDark: isDark,
+                        action: copyFullConversation
+                    )
+                }
+
                 GlassIconActionButton(
                     systemName: "arrow.up.forward.square",
                     tooltip: "Open in WhatsApp Desktop",
@@ -243,14 +308,38 @@ private struct FloatingChatPopupContent: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .padding(.vertical, 10)
+    }
+
+    private var headerSubtitleText: String {
+        let countSuffix = messages.isEmpty ? "" : " · \(messages.count) msg\(messages.count == 1 ? "" : "s")"
+        if let subtitle, !subtitle.isEmpty {
+            return "\(subtitle)\(countSuffix)"
+        }
+        return (isLiveAXSynced ? "Live WhatsApp Sync" : "Session Chat") + countSuffix
+    }
+
+    private func copyFullConversation() {
+        let transcript = messages.map { entry -> String in
+            let author = entry.isOutgoing ? "You" : (entry.sender ?? chatTitle)
+            let timePart = entry.timestamp.map { " [\($0)]" } ?? ""
+            return "\(author)\(timePart): \(entry.text)"
+        }.joined(separator: "\n")
+        guard !transcript.isEmpty else { return }
+        onCopyText(transcript)
+        copiedAll = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+            copiedAll = false
+        }
     }
 
     private func bubbleRow(_ entry: ChatBubbleEntry) -> some View {
-        HStack {
-            if entry.isOutgoing { Spacer(minLength: 44) }
+        let isHovered = hoveredBubbleId == entry.id
 
-            VStack(alignment: .leading, spacing: 3) {
+        return HStack {
+            if entry.isOutgoing { Spacer(minLength: 42) }
+
+            VStack(alignment: .leading, spacing: 3.5) {
                 if !entry.isOutgoing, let sender = entry.sender, !sender.isEmpty, sender != chatTitle {
                     Text(sender)
                         .font(.system(size: 10.5, weight: .semibold))
@@ -258,9 +347,10 @@ private struct FloatingChatPopupContent: View {
                 }
 
                 Text(entry.text)
-                    .font(.system(size: 12.5))
-                    .lineSpacing(1.5)
+                    .font(.system(size: 12.8))
+                    .lineSpacing(1.8)
                     .foregroundStyle(primaryText)
+                    .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 6) {
@@ -279,54 +369,95 @@ private struct FloatingChatPopupContent: View {
                             if copiedId == entry.id { copiedId = nil }
                         }
                     } label: {
-                        Text(copiedId == entry.id ? "Copied ✓" : "Copy")
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundStyle(copiedId == entry.id ? whatsappGreen : mutedText)
+                        HStack(spacing: 2.5) {
+                            Image(systemName: copiedId == entry.id ? "checkmark" : "doc.on.doc")
+                                .font(.system(size: 8.5, weight: .semibold))
+                            Text(copiedId == entry.id ? "Copied" : "Copy")
+                                .font(.system(size: 9.5, weight: .semibold))
+                        }
+                        .foregroundStyle(copiedId == entry.id ? whatsappGreen : mutedText)
+                        .opacity((isHovered || copiedId == entry.id) ? 1.0 : 0.72)
                     }
                     .buttonStyle(.borderless)
                 }
             }
             .padding(.horizontal, 11)
-            .padding(.vertical, 7.5)
-            .background(bubbleBackground(isOutgoing: entry.isOutgoing))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .padding(.vertical, 8)
+            .background(bubbleBackground(isOutgoing: entry.isOutgoing, isHovered: isHovered))
+            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .stroke(
                         entry.isOutgoing
-                            ? whatsappGreen.opacity(0.36)
-                            : (isDark ? Color.white.opacity(0.11) : Color.black.opacity(0.08)),
+                            ? whatsappGreen.opacity(isHovered ? 0.50 : 0.34)
+                            : (isDark ? Color.white.opacity(isHovered ? 0.20 : 0.11) : Color.black.opacity(isHovered ? 0.14 : 0.08)),
                         lineWidth: 1
                     )
             )
+            .onHover { hovering in
+                hoveredBubbleId = hovering ? entry.id : (hoveredBubbleId == entry.id ? nil : hoveredBubbleId)
+            }
 
-            if !entry.isOutgoing { Spacer(minLength: 44) }
+            if !entry.isOutgoing { Spacer(minLength: 42) }
         }
     }
 
-    private func bubbleBackground(isOutgoing: Bool) -> Color {
+    private func bubbleBackground(isOutgoing: Bool, isHovered: Bool) -> Color {
         if isOutgoing {
-            return whatsappGreen.opacity(isDark ? 0.24 : 0.18)
+            return whatsappGreen.opacity(isDark ? (isHovered ? 0.28 : 0.22) : (isHovered ? 0.22 : 0.17))
         }
-        return isDark ? Color.white.opacity(0.085) : Color.black.opacity(0.05)
+        return isDark ? Color.white.opacity(isHovered ? 0.12 : 0.085) : Color.black.opacity(isHovered ? 0.08 : 0.05)
     }
 
     private var composerFooterBar: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 6) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 5) {
+                    ForEach(quickReplies, id: \.self) { chip in
+                        Button {
+                            sendText(chip)
+                        } label: {
+                            Text(chip)
+                                .font(.system(size: 10.5, weight: .medium))
+                                .foregroundStyle(secondaryText)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3.5)
+                                .background(
+                                    Capsule()
+                                        .fill(isDark ? Color.white.opacity(0.08) : Color.black.opacity(0.05))
+                                )
+                                .overlay(
+                                    Capsule()
+                                        .stroke(isDark ? Color.white.opacity(0.14) : Color.black.opacity(0.10), lineWidth: 0.75)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isSending)
+                    }
+                }
+            }
+
             HStack(spacing: 7) {
-                TextField("Reply to \(chatTitle)…", text: $draftReply)
+                TextField("Reply to \(chatTitle)…", text: $draftReply, axis: .vertical)
+                    .lineLimit(1...3)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 12))
+                    .font(.system(size: 12.2))
                     .foregroundStyle(primaryText)
+                    .focused($isComposerFocused)
                     .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 6.5)
                     .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
                             .fill(isDark ? Color.white.opacity(0.09) : Color.black.opacity(0.05))
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(isDark ? Color.white.opacity(0.18) : Color.black.opacity(0.12), lineWidth: 0.75)
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .stroke(
+                                isComposerFocused
+                                    ? whatsappGreen.opacity(0.55)
+                                    : (isDark ? Color.white.opacity(0.18) : Color.black.opacity(0.12)),
+                                lineWidth: 0.9
+                            )
                     )
                     .disabled(isSending)
                     .onSubmit {
@@ -337,7 +468,7 @@ private struct FloatingChatPopupContent: View {
                     ZStack {
                         Circle()
                             .fill(canSend ? whatsappGreen : Color.gray.opacity(0.35))
-                            .frame(width: 28, height: 28)
+                            .frame(width: 29, height: 29)
                         if isSending {
                             ProgressView()
                                 .controlSize(.small)
@@ -378,15 +509,23 @@ private struct FloatingChatPopupContent: View {
 
     private func submitReply() {
         let text = draftReply.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !isSending else { return }
+        guard !text.isEmpty else { return }
+        sendText(text, clearDraftOnSuccess: true)
+    }
+
+    private func sendText(_ text: String, clearDraftOnSuccess: Bool = false) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !isSending else { return }
         isSending = true
-        replyStatusText = nil
+        replyStatusText = "Sending via WhatsApp…"
         replyIsError = false
 
-        onSendReply(text) { result in
+        onSendReply(trimmed) { result in
             isSending = false
             if result.succeeded {
-                draftReply = ""
+                if clearDraftOnSuccess {
+                    draftReply = ""
+                }
                 replyStatusText = "Sent ✓"
                 replyIsError = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {

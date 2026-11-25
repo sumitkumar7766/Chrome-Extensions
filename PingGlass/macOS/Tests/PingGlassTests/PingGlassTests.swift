@@ -422,6 +422,16 @@ final class PingGlassTests: XCTestCase {
             XCTAssertTrue(sampleBounds.contains(chatFrame))
         }
 
+        // Verify Clear All triggers onClearAllRequested callback when Clear All pill action runs
+        var clearAllTriggered = false
+        manager.onClearAllRequested = {
+            clearAllTriggered = true
+            manager.dismissAll(animated: false)
+        }
+        manager.dismissAll(animated: false)
+        XCTAssertFalse(clearAllTriggered, "Programmatic dismissAll does not fire onClearAllRequested")
+        XCTAssertNotNil(manager.onClearAllRequested)
+
         // Verify clicking a notification opens the floating Glass Chat Popup cleanly in place
         var clickConfig = HelperConfiguration(
             globalNotificationsEnabled: true,
@@ -768,5 +778,143 @@ final class PingGlassTests: XCTestCase {
         XCTAssertEqual(sidebarUnread.count, 1)
         XCTAssertEqual(sidebarUnread.first?.sender, "Rohan")
         XCTAssertEqual(sidebarUnread.first?.text, "Call me now")
+    }
+
+    func testCatalystV26TreeExtractionAndNoRepeatAfterClearAll() {
+        let extractor = AccessibilityExtractor()
+        let processor = MessageProcessor()
+        let config = HelperConfiguration(monitoringEnabled: true)
+
+        // Exact WhatsApp v26.43.77 Catalyst AX hierarchy:
+        // - Filter chip buttons (`ChatListView_chipButtonsCell` / `ChatListFilterAction_Unread`) MUST be ignored
+        // - Sidebar rows inside `ChatListView_TableView` use stable identities without row indices
+        // - Active header uses `NavigationBar_HeaderViewButton` (not sidebar "Chats" heading)
+        // - Transcript container uses `AXGroup id=ChatMessagesTableView` + `AXStaticText id=WAMessageBubbleTableViewCell`
+        let filterChipUnread = AXNodeSnapshot(
+            role: "AXButton",
+            identifier: "ChatListFilterAction_Unread",
+            title: "Unread 2",
+            frame: CGRect(x: 92, y: 120, width: 78, height: 30)
+        )
+        let chipContainer = AXNodeSnapshot(
+            role: "AXGroup",
+            identifier: "ChatListView_chipButtonsCell",
+            frame: CGRect(x: 0, y: 112, width: 460, height: 42),
+            children: [filterChipUnread]
+        )
+        let unreadRowA = AXNodeSnapshot(
+            role: "AXButton",
+            descriptionText: "Rohan, 2:10 PM, Hey there, 1 unread message",
+            frame: CGRect(x: 0, y: 188, width: 460, height: 69)
+        )
+        let sidebarTable = AXNodeSnapshot(
+            role: "AXGroup",
+            identifier: "ChatListView_TableView",
+            frame: CGRect(x: 0, y: 34, width: 460, height: 983),
+            children: [
+                AXNodeSnapshot(role: "AXHeading", value: "Chats", frame: CGRect(x: 281, y: 52, width: 38, height: 19)),
+                chipContainer,
+                unreadRowA,
+            ]
+        )
+        let navHeader = AXNodeSnapshot(
+            role: "AXButton",
+            identifier: "NavigationBar_HeaderViewButton",
+            title: "Neha",
+            descriptionText: "Neha, tap here for contact info",
+            frame: CGRect(x: 510, y: 44, width: 210, height: 36)
+        )
+        let incomingBubble = AXNodeSnapshot(
+            role: "AXStaticText",
+            identifier: "WAMessageBubbleTableViewCell",
+            value: "Dinner at 8?",
+            descriptionText: "Dinner at 8?",
+            frame: CGRect(x: 477, y: 400, width: 120, height: 40)
+        )
+        let outgoingBubble = AXNodeSnapshot(
+            role: "AXStaticText",
+            identifier: "WAMessageBubbleTableViewCell",
+            value: "Yes works!",
+            descriptionText: "Yes works!",
+            frame: CGRect(x: 690, y: 460, width: 115, height: 40)
+        )
+        let messagesTable = AXNodeSnapshot(
+            role: "AXGroup",
+            identifier: "ChatMessagesTableView",
+            frame: CGRect(x: 461, y: 34, width: 401, height: 983),
+            children: [incomingBubble, outgoingBubble]
+        )
+        let window1 = AXNodeSnapshot(
+            role: "AXWindow",
+            title: "WhatsApp",
+            frame: CGRect(x: 0, y: 34, width: 862, height: 983),
+            children: [sidebarTable, navHeader, messagesTable]
+        )
+
+        let c1 = extractor.extractFromWindowSnapshot(window1)
+        // Filter chip "Unread 2" must NOT produce a candidate
+        let hasUnreadChip = c1.contains { item in
+            let textMatch = item.text?.contains("Unread 2") == true
+            let senderMatch = item.sender?.contains("Unread") == true
+            return textMatch || senderMatch
+        }
+        let hasRohanSidebar = c1.contains { item in
+            item.extractionPath == "AXSidebarUnread" &&
+                item.sender == "Rohan" &&
+                item.text == "Hey there"
+        }
+        let hasNehaActiveBubble = c1.contains { item in
+            item.extractionPath == "AXActiveChatPane" &&
+                item.chatName == "Neha" &&
+                item.text == "Dinner at 8?" &&
+                item.direction == .incoming
+        }
+        XCTAssertFalse(hasUnreadChip)
+        XCTAssertTrue(hasRohanSidebar)
+        XCTAssertTrue(hasNehaActiveBubble)
+
+        let t0 = Date(timeIntervalSince1970: 10_000)
+        let batch1 = processor.process(candidates: c1, config: config, seedOnly: false, now: t0)
+        XCTAssertEqual(batch1.count, 2, "Initial scan should emit Rohan unread + Neha incoming bubble once")
+
+        // Simulate user clicking Clear All -> 30 minutes pass -> WhatsApp reorders sidebar rows
+        // (a different chat arrives above Rohan so Rohan shifts down) and increments chip count.
+        let newUnreadRow = AXNodeSnapshot(
+            role: "AXButton",
+            descriptionText: "Priya, 2:40 PM, Just reached, 1 unread message",
+            frame: CGRect(x: 0, y: 188, width: 460, height: 69)
+        )
+        let shiftedUnreadRowA = AXNodeSnapshot(
+            role: "AXButton",
+            descriptionText: "Rohan, 2:10 PM, Hey there, 1 unread message",
+            frame: CGRect(x: 0, y: 257, width: 460, height: 69)
+        )
+        let updatedSidebar = AXNodeSnapshot(
+            role: "AXGroup",
+            identifier: "ChatListView_TableView",
+            frame: CGRect(x: 0, y: 34, width: 460, height: 983),
+            children: [
+                AXNodeSnapshot(role: "AXHeading", value: "Chats", frame: CGRect(x: 281, y: 52, width: 38, height: 19)),
+                AXNodeSnapshot(
+                    role: "AXGroup",
+                    identifier: "ChatListView_chipButtonsCell",
+                    children: [AXNodeSnapshot(role: "AXButton", identifier: "ChatListFilterAction_Unread", title: "Unread 3")]
+                ),
+                newUnreadRow,
+                shiftedUnreadRowA,
+            ]
+        )
+        let window2 = AXNodeSnapshot(
+            role: "AXWindow",
+            title: "WhatsApp",
+            frame: CGRect(x: 0, y: 34, width: 862, height: 983),
+            children: [updatedSidebar, navHeader, messagesTable]
+        )
+
+        let c2 = extractor.extractFromWindowSnapshot(window2)
+        let batch2 = processor.process(candidates: c2, config: config, seedOnly: false, now: t0.addingTimeInterval(1800))
+        XCTAssertEqual(batch2.count, 1, "Only the genuinely new message from Priya should notify after Clear All + row shift + 30m")
+        XCTAssertEqual(batch2.first?.sender, "Priya")
+        XCTAssertEqual(batch2.first?.text, "Just reached")
     }
 }

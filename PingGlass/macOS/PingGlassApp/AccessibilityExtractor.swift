@@ -579,7 +579,8 @@ public final class AccessibilityExtractor: @unchecked Sendable {
 
             let isSearch = id.contains("search") || desc.contains("search") || title.contains("search")
             if (role == "AXTextArea" || role == "AXTextField"), !isSearch {
-                if id.contains("chatbar") || id.contains("composer") || desc.contains("type a message") || title.contains("type a message") {
+                if id == "chatbar_composertextview" || id.contains("chatbar_composer") || id.contains("composer") ||
+                    desc.contains("type a message") || title.contains("type a message") {
                     prioritized = el
                     return
                 }
@@ -621,7 +622,8 @@ public final class AccessibilityExtractor: @unchecked Sendable {
                 let id = (copyStringAttribute(el, kAXIdentifierAttribute) ?? "").lowercased()
                 let desc = (copyStringAttribute(el, kAXDescriptionAttribute) ?? "").lowercased()
                 let title = (copyStringAttribute(el, kAXTitleAttribute) ?? "").lowercased()
-                let matchesSend = id.contains("send") || desc == "send" || desc.contains("send message") || title == "send"
+                let matchesSend = id == "chatbar_sendbutton" || id.contains("chatbar_send") ||
+                    id.contains("send") || desc == "send" || desc.contains("send message") || title == "send"
                 if matchesSend {
                     var enabledRef: CFTypeRef?
                     let enabled = (AXUIElementCopyAttributeValue(el, kAXEnabledAttribute as CFString, &enabledRef) == .success)
@@ -759,35 +761,66 @@ public final class AccessibilityExtractor: @unchecked Sendable {
 
     // MARK: - Strategy 1: Sidebar Unread Rows
 
+    private func isExcludedSidebarControl(_ node: AXNodeSnapshot) -> Bool {
+        guard let id = node.identifier?.lowercased() else { return false }
+        if id == "chatlistview_chipbuttonscell" || id == "chatmessagestableview" {
+            return true
+        }
+        return id.hasPrefix("chatlistfilteraction_") ||
+            id.hasPrefix("sidebarbutton_") ||
+            id.hasPrefix("navigationbar_") ||
+            id.hasPrefix("tabbarbutton_") ||
+            id.hasPrefix("chatbar_")
+    }
+
     private func extractUnreadSidebarRows(in root: AXNodeSnapshot) -> [ExtractedCandidate] {
         var results: [ExtractedCandidate] = []
         var candidateRows: [AXNodeSnapshot] = []
-        collectNodes(in: root, matching: { node in
-            if node.role == "AXRow" || node.role == "AXCell" {
-                return true
+
+        func walkSidebar(_ node: AXNodeSnapshot) {
+            if isExcludedSidebarControl(node) {
+                return
             }
-            if node.role == "AXButton" || node.role == "AXGroup" {
-                if node.identifier?.localizedCaseInsensitiveContains("chat") == true ||
-                    node.identifier?.localizedCaseInsensitiveContains("conversation") == true {
+
+            let isRowLike: Bool = {
+                if node.role == "AXRow" || node.role == "AXCell" {
                     return true
                 }
-                // Match Catalyst AXButton/AXGroup cells that carry an explicit "unread" AX label directly
-                // (without picking up an outer container that wraps multiple rows).
-                let directMeta = [node.descriptionText, node.title, node.value]
-                    .compactMap { $0 }
-                    .joined(separator: " ")
-                    .lowercased()
-                let hasNestedRows = node.children.contains {
-                    $0.role == "AXRow" || $0.role == "AXCell" || $0.role == "AXButton"
+                if node.role == "AXButton" || node.role == "AXGroup" {
+                    if let id = node.identifier?.lowercased(),
+                       id != "chatlistview_tableview",
+                       (id.contains("chat") || id.contains("conversation")) {
+                        return true
+                    }
+                    // Match Catalyst AXButton/AXGroup cells that carry an explicit "unread" AX label directly
+                    // (without picking up an outer container that wraps multiple rows).
+                    let directMeta = [node.descriptionText, node.title, node.value]
+                        .compactMap { $0 }
+                        .joined(separator: " ")
+                        .lowercased()
+                    let hasNestedRows = node.children.contains {
+                        $0.role == "AXRow" || $0.role == "AXCell" || $0.role == "AXButton"
+                    }
+                    return !hasNestedRows && directMeta.contains("unread")
                 }
-                return !hasNestedRows && directMeta.contains("unread")
+                return false
+            }()
+
+            if isRowLike {
+                candidateRows.append(node)
+                return
             }
-            return false
-        }, into: &candidateRows)
+
+            for child in node.children {
+                walkSidebar(child)
+            }
+        }
+
+        walkSidebar(root)
 
         var occurrenceCounter: [String: Int] = [:]
 
-        for (idx, row) in candidateRows.enumerated() {
+        for row in candidateRows {
             let texts = collectTextLeaves(in: row)
             let rowDescription = [row.descriptionText, row.title, row.value]
                 .compactMap { $0 }
@@ -804,6 +837,13 @@ public final class AccessibilityExtractor: @unchecked Sendable {
             let occurrence = occurrenceCounter[key, default: 0]
             occurrenceCounter[key] = occurrence + 1
 
+            let stableSidebarIdentity: String = {
+                if let id = row.identifier, !id.isEmpty, id != "ChatListView_TableView" {
+                    return id
+                }
+                return "sidebar-\(Self.normalizeChatLabel(parsed.sender ?? bodyText))"
+            }()
+
             results.append(
                 ExtractedCandidate(
                     sender: parsed.sender,
@@ -811,7 +851,7 @@ public final class AccessibilityExtractor: @unchecked Sendable {
                     text: bodyText,
                     timestamp: parsed.timestamp,
                     direction: direction,
-                    elementIdentity: row.identifier ?? "sidebar-row-\(idx)",
+                    elementIdentity: stableSidebarIdentity,
                     occurrenceIndex: occurrence,
                     baseConfidence: parsed.sender != nil && parsed.preview != nil ? 0.85 : 0.72,
                     extractionPath: "AXSidebarUnread"
@@ -910,13 +950,21 @@ public final class AccessibilityExtractor: @unchecked Sendable {
     ) -> [ExtractedCandidate] {
         var containers: [AXNodeSnapshot] = []
         collectNodes(in: root, matching: { node in
-            (node.role == "AXScrollArea" || node.role == "AXList" || node.role == "AXTable") &&
+            (node.identifier == "ChatMessagesTableView" ||
+             node.role == "AXScrollArea" ||
+             node.role == "AXList" ||
+             node.role == "AXTable") &&
             node.children.count >= 1 &&
             !isSidebarConversationContainer(node)
         }, into: &containers)
 
-        // Heuristic: the active chat transcript container typically occupies the right/wider pane.
+        // Prioritize the explicit Catalyst transcript container (`ChatMessagesTableView`), then wider pane.
         let sortedContainers = containers.sorted { lhs, rhs in
+            let lTranscript = lhs.identifier == "ChatMessagesTableView"
+            let rTranscript = rhs.identifier == "ChatMessagesTableView"
+            if lTranscript != rTranscript {
+                return lTranscript
+            }
             let lw = lhs.frame?.width ?? 0
             let rw = rhs.frame?.width ?? 0
             return lw > rw
@@ -930,7 +978,7 @@ public final class AccessibilityExtractor: @unchecked Sendable {
             // Focus on the newest visible tail (up to last 8 items) to minimize noise & work.
             let tailNodes = bubbleNodes.suffix(8)
 
-            for (idx, bubble) in tailNodes.enumerated() {
+            for bubble in tailNodes {
                 let texts = collectTextLeaves(in: bubble)
                 guard !texts.isEmpty else { continue }
 
@@ -972,6 +1020,15 @@ public final class AccessibilityExtractor: @unchecked Sendable {
                 let occurrence = occurrenceCounter[key, default: 0]
                 occurrenceCounter[key] = occurrence + 1
 
+                let stableBubbleIdentity: String = {
+                    if let id = bubble.identifier,
+                       !id.isEmpty,
+                       id != "WAMessageBubbleTableViewCell" {
+                        return id
+                    }
+                    return "chat-bubble-\(Self.normalizeChatLabel(activeChatTitle ?? sender ?? "active"))"
+                }()
+
                 let confidence: Double = {
                     switch (direction, sender ?? activeChatTitle) {
                     case (.incoming, .some): return 0.90
@@ -988,7 +1045,7 @@ public final class AccessibilityExtractor: @unchecked Sendable {
                         text: bodyText,
                         timestamp: timestamp,
                         direction: direction,
-                        elementIdentity: bubble.identifier ?? "chat-bubble-\(idx)",
+                        elementIdentity: stableBubbleIdentity,
                         occurrenceIndex: occurrence,
                         baseConfidence: confidence,
                         extractionPath: "AXActiveChatPane"
@@ -1076,12 +1133,19 @@ public final class AccessibilityExtractor: @unchecked Sendable {
     }
 
     private func isSidebarConversationContainer(_ container: AXNodeSnapshot) -> Bool {
-        if let id = container.identifier?.lowercased(),
-           id.contains("sidebar") || id.contains("chat-list") || id.contains("conversation-list") {
-            return true
+        if let id = container.identifier?.lowercased() {
+            if id.contains("chatmessagestableview") {
+                return false
+            }
+            if id.contains("sidebar") ||
+                id.contains("chat-list") ||
+                id.contains("conversation-list") ||
+                id.contains("chatlistview") {
+                return true
+            }
         }
         for child in container.children.prefix(12) {
-            if child.role == "AXRow" || child.role == "AXCell" {
+            if child.role == "AXRow" || child.role == "AXCell" || child.role == "AXButton" {
                 let desc = [child.descriptionText, child.title, child.value]
                     .compactMap { $0 }
                     .joined(separator: " ")
@@ -1096,12 +1160,32 @@ public final class AccessibilityExtractor: @unchecked Sendable {
 
     private func flattenMessageLikeChildren(in container: AXNodeSnapshot) -> [AXNodeSnapshot] {
         var items: [AXNodeSnapshot] = []
+        let isTranscriptContainer = container.identifier == "ChatMessagesTableView"
+
+        func isSystemDateDivider(_ texts: [String]) -> Bool {
+            guard texts.count == 1, let single = texts.first?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else {
+                return false
+            }
+            return single == "today" ||
+                single == "yesterday" ||
+                single.contains("end-to-end encrypted") ||
+                isPureUnreadBadgeLabel(single)
+        }
 
         func collectBubbles(from node: AXNodeSnapshot, depth: Int) {
             guard depth <= 4 else { return }
             for child in node.children {
+                if child.role == "AXStaticText",
+                   (child.identifier == "WAMessageBubbleTableViewCell" || isTranscriptContainer) {
+                    let leaves = collectTextLeaves(in: child)
+                    if !leaves.isEmpty && !isSystemDateDivider(leaves) {
+                        items.append(child)
+                    }
+                    continue
+                }
                 if child.role == "AXRow" || child.role == "AXCell" {
-                    if !collectTextLeaves(in: child).isEmpty {
+                    let leaves = collectTextLeaves(in: child)
+                    if !leaves.isEmpty && !isSystemDateDivider(leaves) {
                         items.append(child)
                     }
                     continue
@@ -1110,14 +1194,20 @@ public final class AccessibilityExtractor: @unchecked Sendable {
                     // Check if this AXGroup is itself a collection wrapper holding 2+ text-bearing bubble children.
                     let textBearingChildren = child.children.filter { !collectTextLeaves(in: $0).isEmpty }
                     let childLooksLikeBubbleList = textBearingChildren.count >= 2 &&
-                        child.children.contains { $0.role == "AXGroup" || $0.role == "AXCell" || $0.role == "AXRow" }
+                        child.children.contains {
+                            $0.role == "AXGroup" ||
+                            $0.role == "AXCell" ||
+                            $0.role == "AXRow" ||
+                            $0.identifier == "WAMessageBubbleTableViewCell"
+                        }
                     let onlyOneChildWrapper = child.children.count == 1 &&
                         (child.children[0].role == "AXGroup" || child.children[0].role == "AXList" || child.children[0].role == "AXTable")
                     if childLooksLikeBubbleList || onlyOneChildWrapper {
                         collectBubbles(from: child, depth: depth + 1)
                         continue
                     }
-                    if !collectTextLeaves(in: child).isEmpty {
+                    let leaves = collectTextLeaves(in: child)
+                    if !leaves.isEmpty && !isSystemDateDivider(leaves) {
                         items.append(child)
                     }
                     continue
@@ -1131,24 +1221,47 @@ public final class AccessibilityExtractor: @unchecked Sendable {
     }
 
     private func inferWindowChatTitle(_ window: AXNodeSnapshot) -> String? {
+        // Priority 1: Catalyst explicit chat navigation header button in right pane (`NavigationBar_HeaderViewButton`).
+        var headerButtons: [AXNodeSnapshot] = []
+        collectNodes(in: window, matching: { $0.identifier == "NavigationBar_HeaderViewButton" }, into: &headerButtons)
+        for headerButton in headerButtons {
+            let candidates = [headerButton.title, headerButton.value, headerButton.descriptionText] + collectTextLeaves(in: headerButton)
+            for raw in candidates.compactMap({ $0 }) {
+                let cleaned = cleanHeaderTitleCandidate(raw)
+                if !cleaned.isEmpty,
+                   cleaned.caseInsensitiveCompare("WhatsApp") != .orderedSame,
+                   cleaned.caseInsensitiveCompare("Chats") != .orderedSame {
+                    return cleaned
+                }
+            }
+        }
+
         if let title = window.title?.trimmingCharacters(in: .whitespacesAndNewlines),
            !title.isEmpty,
-           title.caseInsensitiveCompare("WhatsApp") != .orderedSame {
+           title.caseInsensitiveCompare("WhatsApp") != .orderedSame,
+           title.caseInsensitiveCompare("Chats") != .orderedSame {
             return title
         }
 
-        // Look in toolbar/header groups near the top of the window for a chat header title.
-        var topTitles: [String] = []
+        // Look in toolbar/header groups near the top of the right/chat pane (avoiding left sidebar "Chats" heading).
+        var rightPaneTitles: [String] = []
+        var anyTopTitles: [String] = []
         func walk(_ node: AXNodeSnapshot, depth: Int) {
-            guard depth <= 4 else { return }
+            guard depth <= 5 else { return }
             if (node.role == "AXStaticText" || node.role == "AXHeading"),
                let y = node.frame?.minY,
-               let winY = window.frame?.minY,
-               (y - winY) < 110,
-               let text = node.value ?? node.title {
-                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmed.isEmpty && trimmed.caseInsensitiveCompare("WhatsApp") != .orderedSame {
-                    topTitles.append(trimmed)
+               let winFrame = window.frame,
+               (y - winFrame.minY) < 110,
+               let text = node.value ?? node.title ?? node.descriptionText {
+                let trimmed = cleanHeaderTitleCandidate(text)
+                if !trimmed.isEmpty &&
+                    trimmed.caseInsensitiveCompare("WhatsApp") != .orderedSame &&
+                    trimmed.caseInsensitiveCompare("Chats") != .orderedSame {
+                    if let nx = node.frame?.midX, nx >= winFrame.minX + winFrame.width * 0.35 {
+                        rightPaneTitles.append(trimmed)
+                    } else {
+                        anyTopTitles.append(trimmed)
+                    }
                 }
             }
             for child in node.children {
@@ -1156,7 +1269,20 @@ public final class AccessibilityExtractor: @unchecked Sendable {
             }
         }
         walk(window, depth: 0)
-        return topTitles.first
+        return rightPaneTitles.first ?? anyTopTitles.first
+    }
+
+    private func cleanHeaderTitleCandidate(_ raw: String) -> String {
+        var cleaned = stripDirectionalFormatting(raw).trimmingCharacters(in: .whitespacesAndNewlines)
+        for suffix in [", tap here for contact info", ", tap here for group info", ", click for contact info", ", click for group info"] {
+            if let range = cleaned.range(of: suffix, options: .caseInsensitive) {
+                cleaned = String(cleaned[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        if let firstLine = cleaned.components(separatedBy: .newlines).first {
+            cleaned = firstLine.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return cleaned
     }
 
     // MARK: - Live AXUIElement Traversal

@@ -319,6 +319,7 @@ private struct NotificationCardContentView: View {
 
     @State private var showCopiedState = false
     @State private var isExpanded = false
+    @State private var isBodyHovered = false
 
     private var isDark: Bool { config.appearanceMode == .dark }
     private var primaryText: Color {
@@ -401,23 +402,40 @@ private struct NotificationCardContentView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 2)
 
-                        if canExpandPreview {
-                            Button(isExpanded ? "Show less" : "Show more") {
-                                isExpanded.toggle()
-                                DispatchQueue.main.async {
-                                    onToggleExpand()
+                        HStack(spacing: 8) {
+                            if canExpandPreview {
+                                Button(isExpanded ? "Show less" : "Show more") {
+                                    isExpanded.toggle()
+                                    DispatchQueue.main.async {
+                                        onToggleExpand()
+                                    }
                                 }
+                                .buttonStyle(.plain)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(whatsappGreen)
                             }
-                            .buttonStyle(.plain)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(whatsappGreen)
-                            .padding(.top, 1)
+                            Spacer(minLength: 4)
+                            if isBodyHovered {
+                                Text(config.notificationClickAction == .openGlassChatPopup ? "Click to view & reply →" : "Click to open chat →")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(whatsappGreen.opacity(0.92))
+                                    .transition(.opacity)
+                            }
                         }
+                        .padding(.top, 1)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .contentShape(Rectangle())
+            .onHover { hovering in
+                isBodyHovered = hovering
+                if hovering {
+                    NSCursor.pointingHand.set()
+                } else {
+                    NSCursor.arrow.set()
+                }
+            }
             .onTapGesture {
                 onCardClick()
             }

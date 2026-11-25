@@ -1,0 +1,9 @@
+{
+  "name": "com.pingglass.bridge",
+  "description": "PingGlass Windows Local UI Automation Native Messaging Bridge",
+  "path": "pingglass_native_host.bat",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://REPLACE_WITH_32_CHAR_EXTENSION_ID/"
+  ]
+}

@@ -1,0 +1,20 @@
+<Window x:Class="PingGlassWindows.Notifications.ClearAllPillWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        ResizeMode="NoResize">
+    <Button x:Name="PillBtn" Click="PillBtn_Click" Cursor="Hand" BorderThickness="0" Background="Transparent" Padding="0">
+        <Border x:Name="PillBorder" CornerRadius="14" Padding="11,5" BorderThickness="1" BorderBrush="#40FFFFFF" Background="#CC16181E">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock x:Name="PillIcon" Text="☰" FontSize="11" Foreground="#25D366" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="PillText" Text="Clear All" FontSize="11.5" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+    </Button>
+</Window>

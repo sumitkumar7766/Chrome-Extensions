@@ -1,0 +1,192 @@
+<Window x:Class="PingGlassWindows.Views.TrayControlWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PingGlass Windows"
+        Width="346"
+        Height="490"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize">
+
+    <Border CornerRadius="16" BorderThickness="1" BorderBrush="#38FFFFFF" Padding="13">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#E61A2B22" Offset="0.0"/>
+                <GradientStop Color="#EE15181F" Offset="0.35"/>
+                <GradientStop Color="#F0101218" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Border.Background>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8" Background="#1CAD52" Margin="0,0,10,0">
+                    <TextBlock Text="✆" FontSize="15" FontWeight="Bold" Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="PingGlass" FontSize="14" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock x:Name="LifecycleText" Text="Monitoring Active" FontSize="11.5" FontWeight="SemiBold" Foreground="#25D366"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button x:Name="TabToggleBtn" Click="TabToggleBtn_Click" Content="⚙" ToolTip="Toggle Settings"
+                            Width="28" Height="28" Margin="0,0,5,0" Background="#24FFFFFF" BorderBrush="#33FFFFFF"
+                            BorderThickness="1" Foreground="White" FontSize="13" Cursor="Hand"/>
+                    <Button Click="HideWindowBtn_Click" Content="✕" ToolTip="Hide Panel"
+                            Width="28" Height="28" Background="#24FFFFFF" BorderBrush="#33FFFFFF"
+                            BorderThickness="1" Foreground="White" FontSize="11.5" Cursor="Hand"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Status Panel -->
+            <ScrollViewer x:Name="StatusViewPanel" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Border Background="#18FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="10" Padding="10" Margin="0,0,0,10">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="WhatsApp Desktop" FontSize="11.5" Foreground="#B5FFFFFF"/>
+                                <TextBlock x:Name="WhatsAppRowText" Text="Checking…" FontSize="11.5" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Windows UI Automation" FontSize="11.5" Foreground="#B5FFFFFF"/>
+                                <TextBlock x:Name="UiaRowText" Text="Ready" FontSize="11.5" FontWeight="SemiBold" Foreground="#25D366" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Global Notifications" FontSize="11.5" Foreground="#B5FFFFFF"/>
+                                <TextBlock x:Name="GlobalRowText" Text="Active" FontSize="11.5" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Chrome Bridge (Optional)" FontSize="11.5" Foreground="#B5FFFFFF"/>
+                                <TextBlock x:Name="BridgeRowText" Text="Not Required" FontSize="11.5" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Detection Mode" FontSize="11.5" Foreground="#B5FFFFFF"/>
+                                <TextBlock x:Name="ModeRowText" Text="Idle" FontSize="11.5" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Right" MaxWidth="175" TextTrimming="CharacterEllipsis"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Text="Session Messages" FontSize="11.5" Foreground="#B5FFFFFF"/>
+                                <TextBlock x:Name="SessionRowText" Text="0 messages" FontSize="11.5" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <TextBlock x:Name="StatusDetailText" Text="Observing WhatsApp Desktop locally via UI Automation."
+                                       FontSize="10.5" Foreground="#B0FFFFFF" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Action Buttons -->
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Button x:Name="MonitoringBtn" Grid.Column="0" Click="MonitoringBtn_Click" Height="34"
+                                Content="❚❚ Stop Monitoring" FontSize="12" FontWeight="SemiBold" Background="#25D366"
+                                Foreground="White" BorderThickness="0" Margin="0,0,8,0" Cursor="Hand"/>
+                        <Button Grid.Column="1" Click="TestBtn_Click" Height="34" Padding="14,0"
+                                Content="✦ Test" FontSize="12" FontWeight="SemiBold" Background="#24FFFFFF"
+                                Foreground="White" BorderBrush="#33FFFFFF" BorderThickness="1" Cursor="Hand"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Button x:Name="ClearAllBtn" Grid.Column="0" Click="ClearAllBtn_Click" Height="32"
+                                Content="Clear All" FontSize="11.5" FontWeight="SemiBold" Background="#24FFFFFF"
+                                Foreground="White" BorderBrush="#33FFFFFF" BorderThickness="1" Margin="0,0,4,0" Cursor="Hand"/>
+                        <Button x:Name="PauseResumeBtn" Grid.Column="1" Click="PauseResumeBtn_Click" Height="32"
+                                Content="Pause 15m" FontSize="11.5" FontWeight="SemiBold" Background="#24FFFFFF"
+                                Foreground="White" BorderBrush="#33FFFFFF" BorderThickness="1" Margin="4,0,0,0" Cursor="Hand"/>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Settings Panel -->
+            <ScrollViewer x:Name="SettingsViewPanel" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Border Background="#18FFFFFF" CornerRadius="10" Padding="10" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="Global Desktop Notifications" FontSize="11.5" FontWeight="Bold" Foreground="#A8FFFFFF" Margin="0,0,0,8"/>
+                            <CheckBox x:Name="ChkGlobalEnabled" Content="Enable Global Desktop Notifications" Foreground="White" FontSize="11.5" Margin="0,0,0,5" Checked="SettingChanged" Unchecked="SettingChanged"/>
+                            <CheckBox x:Name="ChkChromeForward" Content="Also Forward to Chrome Extension" Foreground="White" FontSize="11.5" Margin="0,0,0,5" Checked="SettingChanged" Unchecked="SettingChanged"/>
+                            <CheckBox x:Name="ChkGlassBlur" Content="Windows Acrylic Glass Blur" Foreground="White" FontSize="11.5" Margin="0,0,0,5" Checked="SettingChanged" Unchecked="SettingChanged"/>
+                            <CheckBox x:Name="ChkAnimations" Content="Slide &amp; Fade Animations" Foreground="White" FontSize="11.5" Margin="0,0,0,5" Checked="SettingChanged" Unchecked="SettingChanged"/>
+                            <CheckBox x:Name="ChkSound" Content="Subtle Notification Chime" Foreground="White" FontSize="11.5" Margin="0,0,0,8" Checked="SettingChanged" Unchecked="SettingChanged"/>
+
+                            <TextBlock Text="Appearance" FontSize="11" Foreground="#B5FFFFFF"/>
+                            <ComboBox x:Name="ComboTheme" SelectionChanged="SettingChanged" Margin="0,2,0,7">
+                                <ComboBoxItem Tag="dark" Content="Dark Glass"/>
+                                <ComboBoxItem Tag="light" Content="Light Glass"/>
+                            </ComboBox>
+
+                            <TextBlock Text="Screen Position" FontSize="11" Foreground="#B5FFFFFF"/>
+                            <ComboBox x:Name="ComboPosition" SelectionChanged="SettingChanged" Margin="0,2,0,7">
+                                <ComboBoxItem Tag="bottom_right" Content="Bottom Right"/>
+                                <ComboBoxItem Tag="center_right" Content="Center Right"/>
+                                <ComboBoxItem Tag="top_right" Content="Top Right"/>
+                                <ComboBoxItem Tag="bottom_left" Content="Bottom Left"/>
+                                <ComboBoxItem Tag="top_left" Content="Top Left"/>
+                            </ComboBox>
+
+                            <TextBlock Text="Auto-Dismiss Duration" FontSize="11" Foreground="#B5FFFFFF"/>
+                            <ComboBox x:Name="ComboDuration" SelectionChanged="SettingChanged" Margin="0,2,0,7">
+                                <ComboBoxItem Tag="0" Content="Until closed (Never)"/>
+                                <ComboBoxItem Tag="3" Content="3 seconds"/>
+                                <ComboBoxItem Tag="5" Content="5 seconds"/>
+                                <ComboBoxItem Tag="6" Content="6 seconds"/>
+                                <ComboBoxItem Tag="8" Content="8 seconds"/>
+                                <ComboBoxItem Tag="10" Content="10 seconds"/>
+                            </ComboBox>
+
+                            <TextBlock Text="On Card Click" FontSize="11" Foreground="#B5FFFFFF"/>
+                            <ComboBox x:Name="ComboClickAction" SelectionChanged="SettingChanged" Margin="0,2,0,4">
+                                <ComboBoxItem Tag="open_glass_chat_popup" Content="Open Floating Glass Chat Popup"/>
+                                <ComboBoxItem Tag="open_whatsapp_directly" Content="Open Chat in WhatsApp Desktop"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#18FFFFFF" CornerRadius="10" Padding="10" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="Card Elements &amp; Startup" FontSize="11.5" FontWeight="Bold" Foreground="#A8FFFFFF" Margin="0,0,0,6"/>
+                            <CheckBox x:Name="ChkShowAvatar" Content="Show Avatar / Initials" Foreground="White" FontSize="11.5" Margin="0,0,0,4" Checked="SettingChanged" Unchecked="SettingChanged"/>
+                            <CheckBox x:Name="ChkShowSender" Content="Show Sender Name" Foreground="White" FontSize="11.5" Margin="0,0,0,4" Checked="SettingChanged" Unchecked="SettingChanged"/>
+                            <CheckBox x:Name="ChkShowChatName" Content="Show Chat Name" Foreground="White" FontSize="11.5" Margin="0,0,0,4" Checked="SettingChanged" Unchecked="SettingChanged"/>
+                            <CheckBox x:Name="ChkShowTimestamp" Content="Show Timestamp" Foreground="White" FontSize="11.5" Margin="0,0,0,4" Checked="SettingChanged" Unchecked="SettingChanged"/>
+                            <CheckBox x:Name="ChkShowPreview" Content="Show Message Preview" Foreground="White" FontSize="11.5" Margin="0,0,0,4" Checked="SettingChanged" Unchecked="SettingChanged"/>
+                            <CheckBox x:Name="ChkShowCopy" Content="Show Copy Button" Foreground="White" FontSize="11.5" Margin="0,0,0,6" Checked="SettingChanged" Unchecked="SettingChanged"/>
+                            <CheckBox x:Name="ChkLaunchAtLogin" Content="Launch PingGlass at Windows Sign-In" Foreground="#25D366" FontSize="11.5" Checked="ChkLaunchAtLogin_Changed" Unchecked="ChkLaunchAtLogin_Changed"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Footer -->
+            <Grid Grid.Row="2" Margin="0,8,0,0">
+                <Button Click="RefreshBtn_Click" Content="Refresh Status" HorizontalAlignment="Left"
+                        BorderThickness="0" Background="Transparent" Foreground="#60A5FA" FontSize="11.5" Cursor="Hand"/>
+                <Button Click="QuitBtn_Click" Content="Quit PingGlass" HorizontalAlignment="Right"
+                        BorderThickness="0" Background="Transparent" Foreground="#FCA5A5" FontSize="11.5" Cursor="Hand"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

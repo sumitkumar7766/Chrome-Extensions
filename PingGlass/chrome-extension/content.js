@@ -640,6 +640,11 @@
     bodyRow.appendChild(main);
     card.appendChild(bodyRow);
 
+    const hintEl = document.createElement("div");
+    hintEl.className = "pg-card-hint";
+    hintEl.textContent = "Click to view & reply →";
+    card.appendChild(hintEl);
+
     card.addEventListener("click", () => {
       handleCardClick(message);
     });
@@ -725,10 +730,11 @@
     const chatTitle = message.chatName && message.chatName !== "Global Notification"
       ? message.chatName
       : message.sender || "WhatsApp Chat";
+    const countSuffix = entries.length > 0 ? ` · ${entries.length} msg${entries.length === 1 ? "" : "s"}` : "";
     const subtitle =
-      message.sender && message.chatName && message.sender !== message.chatName
+      (message.sender && message.chatName && message.sender !== message.chatName
         ? message.sender
-        : "Session Messages";
+        : "Session Chat") + countSuffix;
 
     const popup = document.createElement("section");
     popup.className = "pg-chat-popup";
@@ -775,6 +781,36 @@
 
     const controls = document.createElement("div");
     controls.className = "pg-controls";
+
+    const copyAllBtn = document.createElement("button");
+    copyAllBtn.type = "button";
+    copyAllBtn.className = "pg-btn";
+    copyAllBtn.title = "Copy full conversation";
+    copyAllBtn.setAttribute("aria-label", "Copy full conversation");
+    copyAllBtn.appendChild(createCopyIcon());
+    copyAllBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const sourceEntries = localChatCache.get(chatKey(message)) || entries;
+      const transcript = (sourceEntries || [])
+        .map((item) => {
+          const author = item.isOutgoing ? "You" : item.sender || chatTitle;
+          const timePart = item.timestamp ? ` [${item.timestamp}]` : "";
+          return `${author}${timePart}: ${item.text}`;
+        })
+        .join("\n");
+      if (!transcript) return;
+      void copyMessageToClipboard(transcript, () => {
+        copyAllBtn.dataset.active = "copied";
+        copyAllBtn.replaceChildren(createCheckIcon());
+        setTimeout(() => {
+          delete copyAllBtn.dataset.active;
+          copyAllBtn.replaceChildren(createCopyIcon());
+        }, 1200);
+      });
+    });
+    if (entries.length > 0) {
+      controls.appendChild(copyAllBtn);
+    }
 
     const openBtn = document.createElement("button");
     openBtn.type = "button";
@@ -889,6 +925,19 @@
         bRow.appendChild(bubble);
         body.appendChild(bRow);
       }
+
+      if (!message.isTest && bubbleList.length <= 1) {
+        const syncBtn = document.createElement("button");
+        syncBtn.type = "button";
+        syncBtn.className = "pg-open-history-btn";
+        syncBtn.textContent = "Open in WhatsApp to sync full chat";
+        syncBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          triggerOpenWhatsApp(message);
+        });
+        body.appendChild(syncBtn);
+      }
+
       body.scrollTop = body.scrollHeight;
     }
 
@@ -899,11 +948,16 @@
     const footer = document.createElement("footer");
     footer.className = "pg-chat-footer";
 
+    const quickRow = document.createElement("div");
+    quickRow.className = "pg-quick-replies";
+    const quickChips = ["👍", "Ok", "On my way", "Call soon"];
+    const chipButtons = [];
+
     const replyRow = document.createElement("div");
     replyRow.className = "pg-reply-row";
 
-    const replyInput = document.createElement("input");
-    replyInput.type = "text";
+    const replyInput = document.createElement("textarea");
+    replyInput.rows = 1;
     replyInput.className = "pg-reply-input";
     replyInput.placeholder = `Reply to ${chatTitle}…`;
     replyInput.setAttribute("aria-label", `Reply to ${chatTitle}`);
@@ -934,12 +988,13 @@
     statusLine.textContent = "Local-only · Enter to reply via WhatsApp";
 
     let isSending = false;
-    async function submitReply() {
-      const text = replyInput.value.trim();
+    async function sendReplyText(rawText, { clearInput = false } = {}) {
+      const text = String(rawText || "").trim();
       if (!text || isSending) return;
       isSending = true;
       replyInput.disabled = true;
       sendBtn.disabled = true;
+      for (const chipBtn of chipButtons) chipBtn.disabled = true;
       statusLine.textContent = "Sending via WhatsApp Desktop…";
       delete statusLine.dataset.tone;
 
@@ -951,11 +1006,21 @@
 
       isSending = false;
       replyInput.disabled = false;
+      for (const chipBtn of chipButtons) chipBtn.disabled = false;
       if (res?.ok) {
-        replyInput.value = "";
+        if (clearInput) {
+          replyInput.value = "";
+          replyInput.style.height = "auto";
+        }
+        sendBtn.disabled = !replyInput.value.trim();
         if (Array.isArray(res.entries) && res.entries.length > 0) {
           localChatCache.set(chatKey(message), res.entries);
           renderBubbles(res.entries);
+          subtitleEl.textContent = `${
+            message.sender && message.chatName && message.sender !== message.chatName
+              ? message.sender
+              : "Session Chat"
+          } · ${res.entries.length} msg${res.entries.length === 1 ? "" : "s"}`;
         }
         statusLine.textContent = "Sent ✓";
         statusLine.dataset.tone = "ok";
@@ -972,12 +1037,31 @@
       }
     }
 
+    async function submitReply() {
+      await sendReplyText(replyInput.value, { clearInput: true });
+    }
+
+    for (const chipLabel of quickChips) {
+      const chipBtn = document.createElement("button");
+      chipBtn.type = "button";
+      chipBtn.className = "pg-quick-chip";
+      chipBtn.textContent = chipLabel;
+      chipBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        void sendReplyText(chipLabel, { clearInput: false });
+      });
+      chipButtons.push(chipBtn);
+      quickRow.appendChild(chipBtn);
+    }
+
     replyInput.addEventListener("input", () => {
+      replyInput.style.height = "auto";
+      replyInput.style.height = `${Math.min(68, replyInput.scrollHeight)}px`;
       sendBtn.disabled = isSending || !replyInput.value.trim();
     });
     replyInput.addEventListener("keydown", (e) => {
       e.stopPropagation();
-      if (e.key === "Enter") {
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         void submitReply();
       }
@@ -990,6 +1074,7 @@
 
     replyRow.appendChild(replyInput);
     replyRow.appendChild(sendBtn);
+    footer.appendChild(quickRow);
     footer.appendChild(replyRow);
     footer.appendChild(statusLine);
     popup.appendChild(footer);
@@ -998,6 +1083,9 @@
     positionChatPopupElement(popup);
     shadowRoot.appendChild(popup);
     body.scrollTop = body.scrollHeight;
+    setTimeout(() => {
+      replyInput.focus();
+    }, 30);
   }
 
   /* -------------------------------------------------------------------------- */

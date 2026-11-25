@@ -1,0 +1,117 @@
+<Window x:Class="PingGlassWindows.Notifications.NotificationCardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="320"
+        SizeToContent="Height"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        ResizeMode="NoResize">
+
+    <Border x:Name="CardRoot"
+            CornerRadius="20"
+            Padding="13,10"
+            BorderThickness="1"
+            BorderBrush="#3DFFFFFF"
+            Cursor="Hand">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#CC1A2B22" Offset="0.0"/>
+                <GradientStop Color="#CE14171D" Offset="0.32"/>
+                <GradientStop Color="#CC121419" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Border.Background>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Top Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="18" Height="18" CornerRadius="9" Background="#25D366" Margin="0,0,6,0">
+                        <TextBlock Text="✆" FontSize="11" FontWeight="Bold" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0"/>
+                    </Border>
+                    <TextBlock x:Name="WhatsAppLabel" Text="WhatsApp" FontSize="12" FontWeight="SemiBold"
+                               Foreground="#F5FFFFFF" VerticalAlignment="Center"/>
+                    <Border x:Name="TestBadge" Visibility="Collapsed" Background="#3325D366" CornerRadius="8"
+                            Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="TEST" FontSize="8.5" FontWeight="Bold" Foreground="#25D366"/>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border x:Name="CopiedPill" Visibility="Collapsed" Background="#2E25D366" CornerRadius="8"
+                            Padding="6,1.5" Margin="0,0,5,0" VerticalAlignment="Center">
+                        <TextBlock Text="Copied ✓" FontSize="10" FontWeight="SemiBold" Foreground="#25D366"/>
+                    </Border>
+                    <TextBlock x:Name="TimeText" Text="NOW" FontSize="10.5" Foreground="#99FFFFFF"
+                               VerticalAlignment="Center" Margin="0,0,6,0"/>
+
+                    <Button x:Name="OpenBtn" Click="OpenBtn_Click" ToolTip="Open in WhatsApp"
+                            Width="24" Height="24" Margin="0,0,3,0" BorderThickness="0" Background="#1FFFFFFF"
+                            Foreground="#CCFFFFFF" Content="↗" FontSize="12" Cursor="Hand"/>
+                    <Button x:Name="CopyBtn" Click="CopyBtn_Click" ToolTip="Copy message"
+                            Width="24" Height="24" Margin="0,0,3,0" BorderThickness="0" Background="#1FFFFFFF"
+                            Foreground="#CCFFFFFF" Content="⧉" FontSize="11" Cursor="Hand"/>
+                    <Button x:Name="CloseBtn" Click="CloseBtn_Click" ToolTip="Dismiss"
+                            Width="24" Height="24" BorderThickness="0" Background="#1FFFFFFF"
+                            Foreground="#CCFFFFFF" Content="✕" FontSize="11" Cursor="Hand"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Body Row -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="AvatarBorder" Grid.Column="0" Width="34" Height="34" CornerRadius="17"
+                        Background="#44000000" BorderBrush="#D925D366" BorderThickness="1.3"
+                        VerticalAlignment="Top" Margin="0,2,10,0">
+                    <TextBlock x:Name="AvatarInitials" Text="WA" FontSize="12.5" FontWeight="SemiBold"
+                               Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+
+                <Border x:Name="VerticalDivider" Grid.Column="1" Width="1" Background="#24FFFFFF"
+                        Margin="0,2,10,2" VerticalAlignment="Stretch"/>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock x:Name="SenderText" Text="WhatsApp Message" FontSize="14.5" FontWeight="SemiBold"
+                               Foreground="White" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="ChatNameText" Visibility="Collapsed" FontSize="11.5"
+                               Foreground="#9EFFFFFF" TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
+                    <TextBlock x:Name="PreviewText" FontSize="12.5" Foreground="#E8FFFFFF" TextWrapping="Wrap"
+                               LineHeight="17.5" MaxHeight="76" Margin="0,3,0,0"/>
+
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="ExpandBtn" Grid.Column="0" Visibility="Collapsed" Click="ExpandBtn_Click"
+                                Content="Show more" BorderThickness="0" Background="Transparent"
+                                Foreground="#25D366" FontSize="11" FontWeight="SemiBold" Padding="0" Cursor="Hand"/>
+                        <TextBlock x:Name="HoverHintText" Grid.Column="1" Text="Click to view &amp; reply →"
+                                   FontSize="10" FontWeight="Medium" Foreground="#E625D366"
+                                   HorizontalAlignment="Right" Opacity="0"/>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

@@ -666,7 +666,7 @@ async function handleNativeMessage(envelope) {
     }
 
     case "clear_all_notifications": {
-      clearSessionChats();
+      await resetSessionMessageCounters();
       await clearOverlayAcrossTabs({ syncToHelper: false });
       break;
     }
@@ -818,6 +818,23 @@ async function broadcastSettingsToActiveTabs(settings) {
     const merged = Array.from(new Set([...session.enabledTabIds.filter((id) => aliveTabs.includes(id)), ...aliveTabs]));
     await updateSessionState({ enabledTabIds: merged });
   }
+}
+
+async function resetSessionMessageCounters() {
+  clearSessionChats();
+  const state = await getSessionState();
+  const updatedHelperStatus = state.helperStatus
+    ? {
+        ...state.helperStatus,
+        sessionMessagesForwarded: 0,
+        activeNotificationCount: 0,
+        queuedNotificationCount: 0,
+      }
+    : null;
+  await updateSessionState({
+    sessionMessagesReceived: 0,
+    helperStatus: updatedHelperStatus,
+  });
 }
 
 async function clearOverlayAcrossTabs({ syncToHelper = false } = {}) {
@@ -1051,7 +1068,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
 
         case "popup_clear_all": {
-          clearSessionChats();
+          await resetSessionMessageCounters();
           await clearOverlayAcrossTabs({ syncToHelper: true });
           sendResponse({ ok: true });
           break;
@@ -1222,7 +1239,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
 
         case "content_clear_all": {
-          clearSessionChats();
+          await resetSessionMessageCounters();
           await clearOverlayAcrossTabs({ syncToHelper: true });
           sendResponse({ ok: true });
           break;

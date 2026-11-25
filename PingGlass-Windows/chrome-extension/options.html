@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PingGlass Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <div class="brand">
+        <img src="icons/icon48.png" width="32" height="32" alt="PingGlass logo">
+        <div>
+          <h1>PingGlass Settings</h1>
+          <p>Synced between your PingGlass Windows app and Chrome floating glass notifications.</p>
+        </div>
+      </div>
+      <span id="save-pill" class="save-pill" hidden>Saved</span>
+    </header>
+
+    <main class="grid">
+      <section class="panel">
+        <h2>Monitoring &amp; Bridge</h2>
+
+        <label class="toggle-row">
+          <span>
+            <strong>Auto-Show Overlay in Chrome Tabs</strong>
+            <small>Automatically display floating glass cards on active webpage tabs</small>
+          </span>
+          <input id="chromeAutoOverlay" type="checkbox">
+        </label>
+
+        <label class="toggle-row">
+          <span>
+            <strong>Enable Global Desktop Notifications</strong>
+            <small>Synced with PingGlass Windows floating notification setting</small>
+          </span>
+          <input id="notificationsEnabled" type="checkbox">
+        </label>
+
+        <label class="toggle-row">
+          <span>
+            <strong>Forward Messages to Chrome Extension</strong>
+            <small>Mirror WhatsApp Desktop notifications inside Chrome tabs</small>
+          </span>
+          <input id="chromeForwardingEnabled" type="checkbox">
+        </label>
+
+        <label class="toggle-row">
+          <span>
+            <strong>Pause Notifications</strong>
+            <small>Temporarily mute overlay popups while keeping monitoring alive</small>
+          </span>
+          <input id="notificationsPaused" type="checkbox">
+        </label>
+
+        <label class="toggle-row">
+          <span>
+            <strong>Enable WhatsApp Accessibility Monitoring</strong>
+            <small>Synced directly with PingGlass.app</small>
+          </span>
+          <input id="monitoringEnabled" type="checkbox">
+        </label>
+
+        <div class="field-row">
+          <label for="ambiguousDirectionPolicy">
+            <strong>Uncertain Message Direction</strong>
+            <small>Action when Accessibility metadata cannot confirm incoming vs. outgoing</small>
+          </label>
+          <select id="ambiguousDirectionPolicy">
+            <option value="ignore">Ignore uncertain messages (Recommended)</option>
+            <option value="forward_low_confidence">Forward with low confidence</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Glass Overlay &amp; Interaction</h2>
+
+        <div class="field-row">
+          <label for="theme"><strong>Glass Appearance</strong></label>
+          <select id="theme">
+            <option value="dark">Dark Glass</option>
+            <option value="light">Light Glass</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <label for="position"><strong>Notification Position</strong></label>
+          <select id="position">
+            <option value="bottom-right">Bottom Right</option>
+            <option value="center-right">Center Right</option>
+            <option value="top-right">Top Right</option>
+            <option value="bottom-left">Bottom Left</option>
+            <option value="top-left">Top Left</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <label for="clickAction"><strong>On Card Click</strong></label>
+          <select id="clickAction">
+            <option value="open_glass_chat_popup">Open Floating Glass Chat Popup</option>
+            <option value="open_whatsapp_directly">Open Chat in WhatsApp Desktop</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <label for="autoDismissSeconds">
+            <strong>Auto-Dismiss Duration (seconds)</strong>
+            <small>Default 0 keeps notifications open until you close them</small>
+          </label>
+          <input id="autoDismissSeconds" type="number" min="0" max="60" step="1">
+        </div>
+
+        <div class="field-row">
+          <label for="maxVisible"><strong>Maximum Visible Cards</strong></label>
+          <input id="maxVisible" type="number" min="1" max="6" step="1">
+        </div>
+
+        <div class="field-row">
+          <label for="edgeMargin"><strong>Edge Margin (px)</strong></label>
+          <input id="edgeMargin" type="number" min="12" max="48" step="2">
+        </div>
+
+        <div class="field-row">
+          <label for="maxPreviewLength"><strong>Maximum Preview Length</strong></label>
+          <input id="maxPreviewLength" type="number" min="60" max="800" step="20">
+        </div>
+
+        <label class="toggle-row">
+          <span>
+            <strong>Slide &amp; Fade Animations</strong>
+            <small>Respects Windows Reduce Animations automatically</small>
+          </span>
+          <input id="enableAnimation" type="checkbox">
+        </label>
+
+        <label class="toggle-row">
+          <span>
+            <strong>Subtle Notification Sound</strong>
+            <small>Play gentle chime on incoming messages (off by default)</small>
+          </span>
+          <input id="soundEnabled" type="checkbox">
+        </label>
+      </section>
+
+      <section class="panel">
+        <h2>Card Elements</h2>
+
+        <label class="toggle-row"><span><strong>Show Avatar / Initials</strong></span><input id="showAvatar" type="checkbox"></label>
+        <label class="toggle-row"><span><strong>Show Sender Name</strong></span><input id="showSender" type="checkbox"></label>
+        <label class="toggle-row"><span><strong>Show Chat Name</strong></span><input id="showChatName" type="checkbox"></label>
+        <label class="toggle-row"><span><strong>Show Timestamp</strong></span><input id="showTimestamp" type="checkbox"></label>
+        <label class="toggle-row"><span><strong>Show Message Preview</strong></span><input id="showPreview" type="checkbox"></label>
+        <label class="toggle-row"><span><strong>Show Copy Button</strong></span><input id="showCopyButton" type="checkbox"></label>
+      </section>
+
+      <section class="panel privacy-panel">
+        <h2>Privacy &amp; Bridge Info</h2>
+        <p>
+          PingGlass processes WhatsApp Desktop UI Automation metadata strictly locally on your Windows PC.
+          No message content or contacts are uploaded, stored to disk, or logged.
+        </p>
+        <div class="ext-box">
+          <span>Extension ID (for native host installer):</span>
+          <code id="extension-id-value"></code>
+        </div>
+        <div class="footer-actions">
+          <button id="reset-defaults-btn" type="button" class="btn-secondary">Reset Defaults</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

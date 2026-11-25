@@ -84,7 +84,7 @@ public final class MessageFingerprintStore: @unchecked Sendable {
 
         insertOrRefreshLocked(fingerprint, now: now)
         if let contentHash, let sourcePath {
-            crossSourceEntries[contentHash] = (sourcePath, now.addingTimeInterval(20))
+            crossSourceEntries[contentHash] = (sourcePath, now.addingTimeInterval(ttlSeconds))
         }
         return true
     }
@@ -93,7 +93,7 @@ public final class MessageFingerprintStore: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         pruneExpiredLocked(now: now)
-        crossSourceEntries[contentHash] = (sourcePath, now.addingTimeInterval(20))
+        crossSourceEntries[contentHash] = (sourcePath, now.addingTimeInterval(ttlSeconds))
     }
 
     /// Clears all in-memory fingerprints immediately.

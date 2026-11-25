@@ -48,6 +48,7 @@ final class GlobalNotificationWindowManager {
     var onFetchLiveConversation: ((WhatsAppMessage) -> [ChatBubbleEntry])?
     var onSendReplyRequested: ((WhatsAppMessage, String, @escaping (ReplyDispatchResult) -> Void) -> Void)?
     var onCountsChanged: ((Int, Int) -> Void)?
+    var onClearAllRequested: (() -> Void)?
 
     init(config: HelperConfiguration = HelperConfiguration()) {
         self.currentConfig = config
@@ -210,6 +211,7 @@ final class GlobalNotificationWindowManager {
     func dismissAll(animated: Bool = false) {
         hideClearAllBar()
         closeChatPopup()
+        chatStore.clearAll()
         let ids = Array(activeEntries.keys)
         queue.clearAll()
         for id in ids {
@@ -619,7 +621,11 @@ final class GlobalNotificationWindowManager {
         if let existingView = clearAllView, let existingPanel = clearAllPanel {
             existingView.update(totalCount: total, config: currentConfig) { [weak self] in
                 guard let self else { return }
-                self.dismissAll(animated: self.currentConfig.animationEnabled)
+                if let onClearAllRequested = self.onClearAllRequested {
+                    onClearAllRequested()
+                } else {
+                    self.dismissAll(animated: self.currentConfig.animationEnabled)
+                }
             }
             pillView = existingView
             pillPanel = existingPanel
@@ -630,7 +636,11 @@ final class GlobalNotificationWindowManager {
                 config: currentConfig
             ) { [weak self] in
                 guard let self else { return }
-                self.dismissAll(animated: self.currentConfig.animationEnabled)
+                if let onClearAllRequested = self.onClearAllRequested {
+                    onClearAllRequested()
+                } else {
+                    self.dismissAll(animated: self.currentConfig.animationEnabled)
+                }
             }
             let newPanel = FloatingNotificationPanel(contentRect: NSRect(x: 0, y: 0, width: 96, height: 26))
             newPanel.contentView = newView
