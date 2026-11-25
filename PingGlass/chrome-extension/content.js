@@ -776,6 +776,18 @@
     const controls = document.createElement("div");
     controls.className = "pg-controls";
 
+    const openBtn = document.createElement("button");
+    openBtn.type = "button";
+    openBtn.className = "pg-btn";
+    openBtn.title = "Open in WhatsApp";
+    openBtn.setAttribute("aria-label", "Open in WhatsApp");
+    openBtn.appendChild(createOpenIcon());
+    openBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      triggerOpenWhatsApp(message);
+    });
+    controls.appendChild(openBtn);
+
     const refreshBtn = document.createElement("button");
     refreshBtn.type = "button";
     refreshBtn.className = "pg-btn";
@@ -820,20 +832,23 @@
     const body = document.createElement("div");
     body.className = "pg-chat-messages";
 
-    if (!entries || entries.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "pg-chat-empty";
-      empty.textContent = "No accessible messages captured for this chat yet.";
-      body.appendChild(empty);
-    } else {
-      for (const entry of entries) {
+    function renderBubbles(bubbleList) {
+      body.replaceChildren();
+      if (!bubbleList || bubbleList.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "pg-chat-empty";
+        empty.textContent = "No accessible messages captured for this chat yet.";
+        body.appendChild(empty);
+        return;
+      }
+      for (const entry of bubbleList) {
         const bRow = document.createElement("div");
-        bRow.className = "pg-bubble-row";
+        bRow.className = entry.isOutgoing ? "pg-bubble-row pg-outgoing" : "pg-bubble-row";
 
         const bubble = document.createElement("div");
         bubble.className = "pg-bubble";
 
-        if (entry.sender && entry.sender !== chatTitle) {
+        if (!entry.isOutgoing && entry.sender && entry.sender !== chatTitle) {
           const senderTag = document.createElement("span");
           senderTag.className = "pg-bubble-sender";
           senderTag.textContent = entry.sender;
@@ -874,31 +889,109 @@
         bRow.appendChild(bubble);
         body.appendChild(bRow);
       }
+      body.scrollTop = body.scrollHeight;
     }
+
+    renderBubbles(entries);
     popup.appendChild(body);
 
-    // Footer
+    // Reply Composer Footer
     const footer = document.createElement("footer");
     footer.className = "pg-chat-footer";
 
-    const privacy = document.createElement("span");
-    privacy.className = "pg-chat-privacy";
-    privacy.textContent = "Local-only · No message history saved";
-    footer.appendChild(privacy);
+    const replyRow = document.createElement("div");
+    replyRow.className = "pg-reply-row";
 
-    const openWaBtn = document.createElement("button");
-    openWaBtn.type = "button";
-    openWaBtn.className = "pg-open-wa-pill";
-    openWaBtn.appendChild(createOpenIcon());
-    const openWaText = document.createElement("span");
-    openWaText.textContent = "Open in WhatsApp";
-    openWaBtn.appendChild(openWaText);
-    openWaBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      triggerOpenWhatsApp(message);
+    const replyInput = document.createElement("input");
+    replyInput.type = "text";
+    replyInput.className = "pg-reply-input";
+    replyInput.placeholder = `Reply to ${chatTitle}…`;
+    replyInput.setAttribute("aria-label", `Reply to ${chatTitle}`);
+
+    const sendBtn = document.createElement("button");
+    sendBtn.type = "button";
+    sendBtn.className = "pg-reply-send";
+    sendBtn.disabled = true;
+    sendBtn.title = "Send reply via WhatsApp Desktop";
+    sendBtn.setAttribute("aria-label", "Send reply");
+    sendBtn.appendChild(
+      createSvgIcon([
+        {
+          tag: "path",
+          attrs: {
+            d: "M13.5 2.5 6.8 9.2M13.5 2.5 9.6 13.5l-2.8-4.3L2.5 6.4 13.5 2.5Z",
+            stroke: "currentColor",
+            "stroke-width": "1.35",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round",
+          },
+        },
+      ])
+    );
+
+    const statusLine = document.createElement("span");
+    statusLine.className = "pg-reply-status";
+    statusLine.textContent = "Local-only · Enter to reply via WhatsApp";
+
+    let isSending = false;
+    async function submitReply() {
+      const text = replyInput.value.trim();
+      if (!text || isSending) return;
+      isSending = true;
+      replyInput.disabled = true;
+      sendBtn.disabled = true;
+      statusLine.textContent = "Sending via WhatsApp Desktop…";
+      delete statusLine.dataset.tone;
+
+      const res = await safeSendBackgroundMessage({
+        type: "content_send_reply",
+        message,
+        replyText: text,
+      });
+
+      isSending = false;
+      replyInput.disabled = false;
+      if (res?.ok) {
+        replyInput.value = "";
+        if (Array.isArray(res.entries) && res.entries.length > 0) {
+          localChatCache.set(chatKey(message), res.entries);
+          renderBubbles(res.entries);
+        }
+        statusLine.textContent = "Sent ✓";
+        statusLine.dataset.tone = "ok";
+        setTimeout(() => {
+          if (statusLine.textContent === "Sent ✓") {
+            statusLine.textContent = "Local-only · Enter to reply via WhatsApp";
+            delete statusLine.dataset.tone;
+          }
+        }, 2000);
+      } else {
+        sendBtn.disabled = !replyInput.value.trim();
+        statusLine.textContent = res?.error || "Could not send reply through WhatsApp.";
+        statusLine.dataset.tone = "error";
+      }
+    }
+
+    replyInput.addEventListener("input", () => {
+      sendBtn.disabled = isSending || !replyInput.value.trim();
     });
-    footer.appendChild(openWaBtn);
+    replyInput.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") {
+        e.preventDefault();
+        void submitReply();
+      }
+    });
+    replyInput.addEventListener("click", (e) => e.stopPropagation());
+    sendBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      void submitReply();
+    });
 
+    replyRow.appendChild(replyInput);
+    replyRow.appendChild(sendBtn);
+    footer.appendChild(replyRow);
+    footer.appendChild(statusLine);
     popup.appendChild(footer);
 
     chatPopupEl = popup;
@@ -1147,6 +1240,16 @@
 
         case "pingglass_clear_all":
           clearAllNotifications({ notifyBackground: false });
+          sendResponse({ ok: true });
+          return false;
+
+        case "pingglass_chat_updated":
+          if (msg.message && Array.isArray(msg.chatHistory)) {
+            localChatCache.set(chatKey(msg.message), msg.chatHistory);
+            if (activeChatMessage && chatKey(activeChatMessage) === chatKey(msg.message)) {
+              renderChatPopup(activeChatMessage, msg.chatHistory);
+            }
+          }
           sendResponse({ ok: true });
           return false;
 

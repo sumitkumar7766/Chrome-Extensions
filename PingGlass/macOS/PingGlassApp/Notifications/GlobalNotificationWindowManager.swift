@@ -46,6 +46,7 @@ final class GlobalNotificationWindowManager {
 
     var onOpenWhatsAppRequested: ((WhatsAppMessage) -> Void)?
     var onFetchLiveConversation: ((WhatsAppMessage) -> [ChatBubbleEntry])?
+    var onSendReplyRequested: ((WhatsAppMessage, String, @escaping (ReplyDispatchResult) -> Void) -> Void)?
     var onCountsChanged: ((Int, Int) -> Void)?
 
     init(config: HelperConfiguration = HelperConfiguration()) {
@@ -411,6 +412,26 @@ final class GlobalNotificationWindowManager {
         let bounds = DisplayScreenLocator.targetBounds(for: currentConfig.preferredDisplayMode)
         let targetFrame = computeNonOverlappingChatPopupFrame(bounds: bounds)
 
+        let sendReplyHandler: (String, @escaping (ReplyDispatchResult) -> Void) -> Void = { [weak self] replyText, completion in
+            guard let self else {
+                completion(ReplyDispatchResult(succeeded: false, errorMessage: "Window closed."))
+                return
+            }
+            if let handler = self.onSendReplyRequested {
+                handler(message, replyText) { [weak self] result in
+                    if result.succeeded {
+                        _ = self?.chatStore.recordOutgoing(text: replyText, for: message)
+                        self?.refreshOpenChatPopup(for: message)
+                    }
+                    completion(result)
+                }
+            } else {
+                _ = self.chatStore.recordOutgoing(text: replyText, for: message)
+                self.refreshOpenChatPopup(for: message)
+                completion(ReplyDispatchResult(succeeded: true))
+            }
+        }
+
         if let existingView = chatPopupView, let existingPanel = chatPopupPanel {
             existingView.update(
                 chatTitle: chatTitle,
@@ -428,6 +449,7 @@ final class GlobalNotificationWindowManager {
                 onCopyText: { [weak self] text in
                     self?.copyRawTextToPasteboard(text)
                 },
+                onSendReply: sendReplyHandler,
                 onClose: { [weak self] in
                     self?.closeChatPopup()
                 }
@@ -453,12 +475,13 @@ final class GlobalNotificationWindowManager {
             onCopyText: { [weak self] text in
                 self?.copyRawTextToPasteboard(text)
             },
+            onSendReply: sendReplyHandler,
             onClose: { [weak self] in
                 self?.closeChatPopup()
             }
         )
 
-        let panel = FloatingNotificationPanel(contentRect: targetFrame)
+        let panel = FloatingNotificationPanel(contentRect: targetFrame, allowsKeyFocus: true)
         panel.contentView = popupView
         chatPopupView = popupView
         chatPopupPanel = panel
@@ -491,6 +514,14 @@ final class GlobalNotificationWindowManager {
     func refreshOpenChatPopup(for message: WhatsAppMessage) {
         guard activeChatPopupMessage != nil else { return }
         openChatPopup(for: message)
+    }
+
+    func recordExternalOutgoingReply(_ text: String, for message: WhatsAppMessage) {
+        _ = chatStore.recordOutgoing(text: text, for: message)
+        if let openMsg = activeChatPopupMessage,
+           SessionChatStore.chatKey(for: openMsg) == SessionChatStore.chatKey(for: message) {
+            refreshOpenChatPopup(for: openMsg)
+        }
     }
 
     func closeChatPopup() {

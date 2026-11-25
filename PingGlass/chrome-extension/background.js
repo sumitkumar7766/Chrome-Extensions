@@ -77,6 +77,7 @@ let cachedContentCss = null;
 
 // Ephemeral in-memory session chat store (never written to disk or synced).
 const sessionChats = new Map();
+const pendingReplyResolvers = new Map(); // id -> { resolve, timer }
 const MAX_CHATS = 30;
 const MAX_MESSAGES_PER_CHAT = 40;
 
@@ -110,10 +111,10 @@ function recordSessionMessage(message) {
   if (!entries.some((e) => e.id === message.id)) {
     entries.push({
       id: message.id,
-      sender: message.sender || null,
+      sender: message.isOutgoing ? "You" : message.sender || null,
       text: message.text,
       timestamp: message.timestamp || null,
-      isOutgoing: false,
+      isOutgoing: Boolean(message.isOutgoing),
       isTest: Boolean(message.isTest),
     });
     if (entries.length > MAX_MESSAGES_PER_CHAT) {
@@ -125,6 +126,27 @@ function recordSessionMessage(message) {
   while (sessionChats.size > MAX_CHATS) {
     const oldestKey = sessionChats.keys().next().value;
     sessionChats.delete(oldestKey);
+  }
+}
+
+async function broadcastChatUpdatedToTabs(message, entries) {
+  if (!chrome.tabs || typeof chrome.tabs.query !== "function") return;
+  try {
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      if (!tab?.id || !isInjectableUrl(tab.url)) continue;
+      try {
+        await chrome.tabs.sendMessage(tab.id, {
+          type: "pingglass_chat_updated",
+          message,
+          chatHistory: entries,
+        });
+      } catch {
+        // Ignore tabs without active overlay.
+      }
+    }
+  } catch {
+    // Ignore query failures.
   }
 }
 
@@ -466,7 +488,11 @@ function sendToNativePort(payload) {
     return false;
   }
   try {
-    nativePort.postMessage(payload);
+    const envelope =
+      payload && typeof payload === "object" && !payload.timestamp
+        ? { ...payload, timestamp: new Date().toISOString() }
+        : payload;
+    nativePort.postMessage(envelope);
     return true;
   } catch {
     nativePort = null;
@@ -609,6 +635,33 @@ async function handleNativeMessage(envelope) {
       }
 
       await dispatchNotificationToActiveOverlay(sanitized, settings);
+      break;
+    }
+
+    case "reply_result": {
+      const replyMsg = envelope.message;
+      const reqId = replyMsg?.id;
+      const ok = !envelope.error && Boolean(envelope.helperConnected !== false);
+      if (ok && replyMsg?.text) {
+        const entry = {
+          ...replyMsg,
+          id: `out-${crypto.randomUUID()}`,
+          sender: "You",
+          isOutgoing: true,
+        };
+        recordSessionMessage(entry);
+        await broadcastChatUpdatedToTabs(entry, getSessionChatMessages(entry));
+      }
+      if (reqId && pendingReplyResolvers.has(reqId)) {
+        const pending = pendingReplyResolvers.get(reqId);
+        pendingReplyResolvers.delete(reqId);
+        clearTimeout(pending.timer);
+        pending.resolve({
+          ok,
+          error: envelope.error || null,
+          entries: replyMsg ? getSessionChatMessages(replyMsg) : [],
+        });
+      }
       break;
     }
 
@@ -1104,6 +1157,67 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             message: request.message || null,
           });
           sendResponse({ ok: sent });
+          break;
+        }
+
+        case "content_send_reply": {
+          const baseMessage = request.message || {};
+          const replyText = typeof request.replyText === "string" ? request.replyText.trim() : "";
+          if (!replyText) {
+            sendResponse({ ok: false, error: "Reply cannot be empty." });
+            break;
+          }
+
+          if (baseMessage.isTest) {
+            const testOut = {
+              ...baseMessage,
+              id: `test-out-${crypto.randomUUID()}`,
+              sender: "You",
+              text: replyText,
+              timestamp: new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date()),
+              isOutgoing: true,
+              isTest: true,
+            };
+            recordSessionMessage(testOut);
+            const entries = getSessionChatMessages(testOut);
+            await broadcastChatUpdatedToTabs(testOut, entries);
+            sendResponse({ ok: true, entries });
+            break;
+          }
+
+          if (!nativePort) {
+            await connectNativeBridge({ resetAttempts: true });
+          }
+          const session = await getSessionState();
+          if (!nativePort || !session.helperConnected) {
+            sendResponse({ ok: false, error: "Open PingGlass macOS app to send WhatsApp replies." });
+            break;
+          }
+
+          const correlationId = `reply-${crypto.randomUUID()}`;
+          const payloadMsg = {
+            id: correlationId,
+            sender: baseMessage.sender || null,
+            chatName: baseMessage.chatName || baseMessage.sender || null,
+            text: replyText,
+            isTest: Boolean(baseMessage.isTest),
+            isOutgoing: true,
+          };
+
+          const replyOutcome = await new Promise((resolve) => {
+            const timer = setTimeout(() => {
+              pendingReplyResolvers.delete(correlationId);
+              resolve({ ok: false, error: "Reply timed out waiting for WhatsApp Desktop." });
+            }, 6000);
+            pendingReplyResolvers.set(correlationId, { resolve, timer });
+            const sent = sendToNativePort({ type: "send_reply", message: payloadMsg });
+            if (!sent) {
+              clearTimeout(timer);
+              pendingReplyResolvers.delete(correlationId);
+              resolve({ ok: false, error: "Bridge not connected." });
+            }
+          });
+          sendResponse(replyOutcome);
           break;
         }
 

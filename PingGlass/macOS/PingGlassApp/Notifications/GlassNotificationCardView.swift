@@ -351,7 +351,7 @@ private struct NotificationCardContentView: View {
         guard config.showChatName,
               let chatName = message.chatName,
               !chatName.isEmpty,
-              chatName != displaySender else {
+              chatName.caseInsensitiveCompare(displaySender) != .orderedSame else {
             return nil
         }
         return chatName
@@ -359,7 +359,7 @@ private struct NotificationCardContentView: View {
 
     private var canExpandPreview: Bool {
         guard let text = message.text else { return false }
-        return text.count > 120 || text.components(separatedBy: "\n").count > 3
+        return text.count > 140 || text.components(separatedBy: "\n").count > 4
     }
 
     var body: some View {
@@ -397,7 +397,7 @@ private struct NotificationCardContentView: View {
                             .font(.system(size: 12.5, weight: .regular))
                             .lineSpacing(2.0)
                             .foregroundStyle(messageTextColor)
-                            .lineLimit(isExpanded ? 7 : 3)
+                            .lineLimit(isExpanded ? 8 : 4)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 2)
 

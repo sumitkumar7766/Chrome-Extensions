@@ -1,9 +1,14 @@
 import AppKit
 
-/// Borderless, transparent, non-activating floating panel that renders above active macOS apps
-/// without stealing keyboard focus or changing the frontmost application.
+/// Borderless, transparent floating panel that renders above active macOS apps.
+/// By default (`allowsKeyFocus = false`), panels never become key or steal focus.
+/// When interactive text input is needed inside the Chat Reply Popup, `allowsKeyFocus = true`
+/// uses `.nonactivatingPanel` + `becomesKeyOnlyIfNeeded` so typing works only after explicit user click.
 final class FloatingNotificationPanel: NSPanel {
-    init(contentRect: NSRect) {
+    private let allowsKeyFocus: Bool
+
+    init(contentRect: NSRect, allowsKeyFocus: Bool = false) {
+        self.allowsKeyFocus = allowsKeyFocus
         super.init(
             contentRect: contentRect,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -31,10 +36,11 @@ final class FloatingNotificationPanel: NSPanel {
         acceptsMouseMovedEvents = true
         ignoresMouseEvents = false
         animationBehavior = .none
+        becomesKeyOnlyIfNeeded = allowsKeyFocus
     }
 
     override var canBecomeKey: Bool {
-        false
+        allowsKeyFocus
     }
 
     override var canBecomeMain: Bool {

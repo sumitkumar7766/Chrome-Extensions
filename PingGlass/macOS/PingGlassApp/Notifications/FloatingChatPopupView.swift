@@ -1,10 +1,10 @@
 import AppKit
 import SwiftUI
 
-/// Floating native glass popup displaying the clicked contact's recent chat messages
-/// at the notification screen corner, without stealing focus or requiring app switching.
+/// Floating native glass chat & quick-reply popup displaying session + live AX bubbles
+/// and allowing replies directly through WhatsApp Desktop's accessible composer.
 final class GlassChatPopupView: NSView {
-    static let popupSize = CGSize(width: 318, height: 336)
+    static let popupSize = CGSize(width: 318, height: 356)
     static let cornerRadius: CGFloat = 18.0
 
     private let backdropView = LiquidGlassBackdropView(cornerRadius: GlassChatPopupView.cornerRadius, showLeftAccent: true)
@@ -20,6 +20,7 @@ final class GlassChatPopupView: NSView {
         onRefresh: @escaping () -> Void,
         onOpenWhatsApp: @escaping () -> Void,
         onCopyText: @escaping (String) -> Void,
+        onSendReply: @escaping (String, @escaping (ReplyDispatchResult) -> Void) -> Void,
         onClose: @escaping () -> Void
     ) {
         self.hostingView = NSHostingView(
@@ -33,6 +34,7 @@ final class GlassChatPopupView: NSView {
                 onRefresh: onRefresh,
                 onOpenWhatsApp: onOpenWhatsApp,
                 onCopyText: onCopyText,
+                onSendReply: onSendReply,
                 onClose: onClose
             )
         )
@@ -70,6 +72,7 @@ final class GlassChatPopupView: NSView {
             onRefresh: onRefresh,
             onOpenWhatsApp: onOpenWhatsApp,
             onCopyText: onCopyText,
+            onSendReply: onSendReply,
             onClose: onClose
         )
     }
@@ -89,6 +92,7 @@ final class GlassChatPopupView: NSView {
         onRefresh: @escaping () -> Void,
         onOpenWhatsApp: @escaping () -> Void,
         onCopyText: @escaping (String) -> Void,
+        onSendReply: @escaping (String, @escaping (ReplyDispatchResult) -> Void) -> Void,
         onClose: @escaping () -> Void
     ) {
         hostingView.rootView = FloatingChatPopupContent(
@@ -101,6 +105,7 @@ final class GlassChatPopupView: NSView {
             onRefresh: onRefresh,
             onOpenWhatsApp: onOpenWhatsApp,
             onCopyText: onCopyText,
+            onSendReply: onSendReply,
             onClose: onClose
         )
 
@@ -119,9 +124,14 @@ private struct FloatingChatPopupContent: View {
     let onRefresh: () -> Void
     let onOpenWhatsApp: () -> Void
     let onCopyText: (String) -> Void
+    let onSendReply: (String, @escaping (ReplyDispatchResult) -> Void) -> Void
     let onClose: () -> Void
 
     @State private var copiedId: String?
+    @State private var draftReply: String = ""
+    @State private var isSending = false
+    @State private var replyStatusText: String?
+    @State private var replyIsError = false
 
     private var isDark: Bool { config.appearanceMode == .dark }
     private var primaryText: Color { isDark ? .white : Color(red: 0.06, green: 0.09, blue: 0.16) }
@@ -150,7 +160,7 @@ private struct FloatingChatPopupContent: View {
                             }
                         }
                     }
-                    .padding(12)
+                    .padding(11)
                 }
                 .onAppear {
                     if let last = messages.last {
@@ -168,7 +178,7 @@ private struct FloatingChatPopupContent: View {
 
             Divider().opacity(0.25)
 
-            footerBar
+            composerFooterBar
         }
         .frame(width: GlassChatPopupView.popupSize.width, height: GlassChatPopupView.popupSize.height)
     }
@@ -201,7 +211,7 @@ private struct FloatingChatPopupContent: View {
                     }
                 }
 
-                Text(subtitle ?? (isLiveAXSynced ? "Live WhatsApp Accessibility" : "Session Messages"))
+                Text(subtitle ?? (isLiveAXSynced ? "Live WhatsApp Chat" : "Session Chat"))
                     .font(.system(size: 10.5))
                     .foregroundStyle(mutedText)
                     .lineLimit(1)
@@ -211,8 +221,15 @@ private struct FloatingChatPopupContent: View {
 
             HStack(spacing: 4) {
                 GlassIconActionButton(
+                    systemName: "arrow.up.forward.square",
+                    tooltip: "Open in WhatsApp Desktop",
+                    isDark: isDark,
+                    action: onOpenWhatsApp
+                )
+
+                GlassIconActionButton(
                     systemName: "arrow.clockwise",
-                    tooltip: "Refresh visible messages from WhatsApp Accessibility",
+                    tooltip: "Refresh visible messages",
                     isDark: isDark,
                     action: onRefresh
                 )
@@ -231,7 +248,7 @@ private struct FloatingChatPopupContent: View {
 
     private func bubbleRow(_ entry: ChatBubbleEntry) -> some View {
         HStack {
-            if entry.isOutgoing { Spacer(minLength: 42) }
+            if entry.isOutgoing { Spacer(minLength: 44) }
 
             VStack(alignment: .leading, spacing: 3) {
                 if !entry.isOutgoing, let sender = entry.sender, !sender.isEmpty, sender != chatTitle {
@@ -242,6 +259,7 @@ private struct FloatingChatPopupContent: View {
 
                 Text(entry.text)
                     .font(.system(size: 12.5))
+                    .lineSpacing(1.5)
                     .foregroundStyle(primaryText)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -269,58 +287,118 @@ private struct FloatingChatPopupContent: View {
                 }
             }
             .padding(.horizontal, 11)
-            .padding(.vertical, 8)
+            .padding(.vertical, 7.5)
             .background(bubbleBackground(isOutgoing: entry.isOutgoing))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(
                         entry.isOutgoing
-                            ? whatsappGreen.opacity(0.32)
-                            : (isDark ? Color.white.opacity(0.10) : Color.black.opacity(0.07)),
+                            ? whatsappGreen.opacity(0.36)
+                            : (isDark ? Color.white.opacity(0.11) : Color.black.opacity(0.08)),
                         lineWidth: 1
                     )
             )
 
-            if !entry.isOutgoing { Spacer(minLength: 42) }
+            if !entry.isOutgoing { Spacer(minLength: 44) }
         }
     }
 
     private func bubbleBackground(isOutgoing: Bool) -> Color {
         if isOutgoing {
-            return whatsappGreen.opacity(isDark ? 0.22 : 0.16)
+            return whatsappGreen.opacity(isDark ? 0.24 : 0.18)
         }
-        return isDark ? Color.white.opacity(0.08) : Color.black.opacity(0.05)
+        return isDark ? Color.white.opacity(0.085) : Color.black.opacity(0.05)
     }
 
-    private var footerBar: some View {
-        HStack(spacing: 8) {
-            if !isLiveAXSynced && !isTestChat {
-                Text("Session view · open WhatsApp for full history")
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(mutedText)
-                    .lineLimit(1)
-            } else {
-                Text("Local-only · No message history saved")
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(mutedText)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            Button(action: onOpenWhatsApp) {
-                Label("Open in WhatsApp", systemImage: "arrow.up.forward.app")
-                    .font(.system(size: 11.5, weight: .semibold))
+    private var composerFooterBar: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 7) {
+                TextField("Reply to \(chatTitle)…", text: $draftReply)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .foregroundStyle(primaryText)
                     .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(whatsappGreen.opacity(0.20), in: Capsule())
-                    .foregroundStyle(isDark ? Color.white : Color(red: 0.02, green: 0.45, blue: 0.25))
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(isDark ? Color.white.opacity(0.09) : Color.black.opacity(0.05))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(isDark ? Color.white.opacity(0.18) : Color.black.opacity(0.12), lineWidth: 0.75)
+                    )
+                    .disabled(isSending)
+                    .onSubmit {
+                        submitReply()
+                    }
+
+                Button(action: submitReply) {
+                    ZStack {
+                        Circle()
+                            .fill(canSend ? whatsappGreen : Color.gray.opacity(0.35))
+                            .frame(width: 28, height: 28)
+                        if isSending {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "paperplane.fill")
+                                .font(.system(size: 11.5, weight: .semibold))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSend || isSending)
+                .help("Send reply through WhatsApp Desktop")
             }
-            .buttonStyle(.borderless)
+
+            HStack(spacing: 6) {
+                if let replyStatusText {
+                    Text(replyStatusText)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(replyIsError ? Color.orange : whatsappGreen)
+                        .lineLimit(1)
+                } else {
+                    Text("Local-only · Press Return to send via WhatsApp")
+                        .font(.system(size: 10))
+                        .foregroundStyle(mutedText)
+                        .lineLimit(1)
+                }
+                Spacer()
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
+    }
+
+    private var canSend: Bool {
+        !draftReply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func submitReply() {
+        let text = draftReply.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !isSending else { return }
+        isSending = true
+        replyStatusText = nil
+        replyIsError = false
+
+        onSendReply(text) { result in
+            isSending = false
+            if result.succeeded {
+                draftReply = ""
+                replyStatusText = "Sent ✓"
+                replyIsError = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    if replyStatusText == "Sent ✓" {
+                        replyStatusText = nil
+                    }
+                }
+            } else {
+                replyIsError = true
+                replyStatusText = result.errorMessage ?? "Could not send reply."
+            }
+        }
     }
 
     private func initials(from name: String) -> String {

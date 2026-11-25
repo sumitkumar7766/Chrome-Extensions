@@ -224,6 +224,85 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// Sends a reply through WhatsApp Desktop's accessible compose box, returning focus to the caller app when finished.
+    func sendReply(_ replyText: String, for message: WhatsAppMessage, completion: @escaping (ReplyDispatchResult) -> Void) {
+        let trimmed = replyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            completion(ReplyDispatchResult(succeeded: false, errorMessage: "Reply cannot be empty."))
+            return
+        }
+
+        if message.isTest {
+            completion(ReplyDispatchResult(succeeded: true))
+            return
+        }
+
+        guard permissionManager.isAccessibilityGranted else {
+            completion(ReplyDispatchResult(succeeded: false, errorMessage: "Accessibility permission required to send replies."))
+            return
+        }
+
+        let targetChat = (message.chatName?.isEmpty == false && message.chatName != "WhatsApp")
+            ? message.chatName
+            : message.sender
+        let previousApp = NSWorkspace.shared.frontmostApplication
+
+        func dispatchUsingPID(_ pid: pid_t, runningApp: NSRunningApplication) {
+            if runningApp.isHidden {
+                runningApp.unhide()
+            }
+            runningApp.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+            DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.20) { [weak self] in
+                guard let self else { return }
+                let result = self.chatExtractor.sendReply(trimmed, expectedChatTitle: targetChat, inPID: pid)
+                Task { @MainActor [weak self] in
+                    if let previousApp, previousApp.bundleIdentifier != runningApp.bundleIdentifier, result.succeeded {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            previousApp.activate(options: [])
+                        }
+                    }
+                    _ = self
+                    completion(result)
+                }
+            }
+        }
+
+        for bundleId in WhatsAppDetector.supportedBundleIdentifiers {
+            if let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first(where: { !$0.isTerminated }) {
+                let testResult = chatExtractor.extract(fromAppElement: AXUIElementCreateApplication(running.processIdentifier))
+                if testResult.accessibleWindowCount == 0 {
+                    // Reopen closed WhatsApp window first via NSWorkspace before replying.
+                    let candidates = [
+                        URL(fileURLWithPath: "/Applications/WhatsApp.app"),
+                        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications/WhatsApp.app"),
+                    ]
+                    if let appURL = candidates.first(where: { FileManager.default.fileExists(atPath: $0.path) }) {
+                        let openConfig = NSWorkspace.OpenConfiguration()
+                        openConfig.activates = true
+                        NSWorkspace.shared.openApplication(at: appURL, configuration: openConfig) { app, _ in
+                            guard let app else {
+                                Task { @MainActor in
+                                    completion(ReplyDispatchResult(succeeded: false, errorMessage: "Could not open WhatsApp window."))
+                                }
+                                return
+                            }
+                            Task { @MainActor in
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                    dispatchUsingPID(app.processIdentifier, runningApp: app)
+                                }
+                            }
+                        }
+                        return
+                    }
+                }
+                dispatchUsingPID(running.processIdentifier, runningApp: running)
+                return
+            }
+        }
+
+        completion(ReplyDispatchResult(succeeded: false, errorMessage: "WhatsApp Desktop is not running."))
+    }
+
     func currentSnapshot() -> HelperStatusSnapshot {
         let proc = whatsappDetector.currentProcess
         let syncedConfig = BridgeSettingsPayload(
@@ -289,6 +368,26 @@ final class AppState: ObservableObject {
             return self.chatExtractor.extractVisibleConversation(forChatTitle: target, fromPID: proc.pid)
         }
 
+        notificationManager.onSendReplyRequested = { [weak self] message, replyText, completion in
+            self?.sendReply(replyText, for: message) { [weak self] result in
+                if let self, result.succeeded, self.connectedBridgeClients > 0 {
+                    let outgoingMirror = WhatsAppMessage(
+                        id: "out-\(UUID().uuidString)",
+                        sender: "You",
+                        chatName: message.chatName ?? message.sender,
+                        text: replyText,
+                        timestamp: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
+                        source: "pingglass-reply",
+                        confidence: 1.0,
+                        isTest: message.isTest,
+                        isOutgoing: true
+                    )
+                    self.ipcServer.broadcast(BridgeEnvelope(type: "reply_result", message: outgoingMirror, helperConnected: true))
+                }
+                completion(result)
+            }
+        }
+
         notificationManager.onCountsChanged = { [weak self] activeCount, queuedCount in
             self?.visibleNotificationCount = activeCount
             self?.queuedNotificationCount = queuedCount
@@ -326,13 +425,17 @@ final class AppState: ObservableObject {
             if !report.observerAttached && !report.fallbackPollingActive {
                 self.lifecycleState = .error
                 self.statusDetail = report.errorDescription ?? "Unable to observe WhatsApp UI."
-            } else if !report.observerAttached || report.accessibleWindowCount == 0 {
+            } else if !report.observerAttached || (report.accessibleWindowCount == 0 && !report.bannerObserverAttached) {
                 self.lifecycleState = .monitoringLimited
                 self.statusDetail = report.errorDescription ??
                     "Fallback polling active; open WhatsApp window for best Accessibility coverage."
+            } else if report.accessibleWindowCount == 0 && report.bannerObserverAttached {
+                self.lifecycleState = .monitoringLimited
+                self.statusDetail = report.errorDescription ??
+                    "WhatsApp window closed; observing macOS WhatsApp banners via Accessibility."
             } else {
                 self.lifecycleState = .monitoringActive
-                self.statusDetail = "Observing WhatsApp Desktop via Accessibility APIs."
+                self.statusDetail = "Observing WhatsApp Desktop & banners via Accessibility APIs."
             }
             self.broadcastStatus()
         }
@@ -437,6 +540,7 @@ final class AppState: ObservableObject {
             extractionMode = "Permission required"
             lifecycleState = .accessibilityRequired
             statusDetail = "Grant Accessibility access in System Settings to observe WhatsApp."
+            permissionManager.startTransientRefresh(duration: 180.0)
             broadcastStatus()
             return
         }
@@ -474,6 +578,15 @@ final class AppState: ObservableObject {
             )
         case "request_status":
             broadcastStatus()
+        case "ax_diagnostic":
+            let dockPID = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first?.processIdentifier
+            let ncPID = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.notificationcenterui").first?.processIdentifier
+            let report = chatExtractor.structuralDiagnostics(
+                whatsappPID: whatsappDetector.currentProcess?.pid,
+                dockPID: dockPID,
+                notificationCenterPID: ncPID
+            )
+            ipcServer.broadcast(BridgeEnvelope(type: "ax_diagnostic", status: currentSnapshot(), helperConnected: true, diagnostics: report))
         case "start_monitoring":
             startMonitoring()
         case "pause_monitoring":
@@ -489,6 +602,43 @@ final class AppState: ObservableObject {
             }
         case "open_whatsapp":
             openWhatsAppDesktop(for: envelope.message)
+        case "send_reply":
+            guard let msg = envelope.message, let replyText = msg.text, !replyText.isEmpty else {
+                ipcServer.broadcast(
+                    BridgeEnvelope(
+                        type: "reply_result",
+                        message: envelope.message,
+                        helperConnected: false,
+                        error: "Missing reply text."
+                    )
+                )
+                return
+            }
+            sendReply(replyText, for: msg) { [weak self] result in
+                guard let self else { return }
+                if result.succeeded {
+                    self.notificationManager.recordExternalOutgoingReply(replyText, for: msg)
+                }
+                let replyMsg = WhatsAppMessage(
+                    id: msg.id,
+                    sender: "You",
+                    chatName: msg.chatName ?? msg.sender,
+                    text: replyText,
+                    timestamp: DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short),
+                    source: "pingglass-reply",
+                    confidence: 1.0,
+                    isTest: msg.isTest,
+                    isOutgoing: true
+                )
+                self.ipcServer.broadcast(
+                    BridgeEnvelope(
+                        type: "reply_result",
+                        message: replyMsg,
+                        helperConnected: result.succeeded,
+                        error: result.errorMessage
+                    )
+                )
+            }
         case "pause_notifications":
             if let minutes = envelope.settings?.pauseMinutes, minutes > 0 {
                 pauseNotifications(forMinutes: minutes)

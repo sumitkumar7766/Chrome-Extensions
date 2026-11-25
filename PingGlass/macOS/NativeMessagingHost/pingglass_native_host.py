@@ -41,6 +41,7 @@ ALLOWED_INBOUND_FROM_CHROME = {
     "clear_all_notifications",
     "dismiss_notification",
     "open_whatsapp",
+    "send_reply",
     "pause_notifications",
     "launch_helper",
 }
@@ -49,6 +50,7 @@ ALLOWED_OUTBOUND_FROM_HELPER = {
     "connection_status",
     "monitoring_status",
     "incoming_message",
+    "reply_result",
     "clear_all_notifications",
     "dismiss_notification",
     "pong",
@@ -307,6 +309,10 @@ class NativeMessagingBridge:
                     }
                 )
             return
+
+        if "timestamp" not in payload or not payload["timestamp"]:
+            payload = dict(payload)
+            payload["timestamp"] = utc_iso_now()
 
         sent = self.send_to_helper(payload)
         if not sent:

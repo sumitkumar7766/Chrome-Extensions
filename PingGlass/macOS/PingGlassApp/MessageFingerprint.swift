@@ -12,10 +12,20 @@ public final class MessageFingerprintStore: @unchecked Sendable {
     private var entries: [String: Date] = [:]
     /// Insertion order queue for deterministic bounded eviction.
     private var insertionOrder: [String] = []
+    /// Short-TTL cross-source content map (`contentHash -> (sourcePath, expiry)`) so simultaneous banner + window observations deduplicate cleanly.
+    private var crossSourceEntries: [String: (sourcePath: String, expiry: Date)] = [:]
 
-    public init(maxEntries: Int = 500, ttlSeconds: TimeInterval = 300) {
+    public init(maxEntries: Int = 2000, ttlSeconds: TimeInterval = 86_400) {
         self.maxEntries = max(50, maxEntries)
         self.ttlSeconds = max(15, ttlSeconds)
+    }
+
+    public static func computeContentHash(sender: String?, chatName: String?, text: String?) -> String {
+        let contact = normalize(chatName ?? sender).lowercased()
+        let body = normalize(text)
+        let joined = "\(contact)\u{001F}\(body)"
+        let digest = SHA256.hash(data: Data(joined.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
     }
 
     /// Computes a deterministic SHA-256 fingerprint from available message metadata.
@@ -50,7 +60,12 @@ public final class MessageFingerprintStore: @unchecked Sendable {
     }
 
     /// Returns true if the fingerprint is new (not seen within TTL) and records it; false if duplicate.
-    public func shouldAccept(_ fingerprint: String, now: Date = Date()) -> Bool {
+    public func shouldAccept(
+        _ fingerprint: String,
+        contentHash: String? = nil,
+        sourcePath: String? = nil,
+        now: Date = Date()
+    ) -> Bool {
         lock.lock()
         defer { lock.unlock() }
         pruneExpiredLocked(now: now)
@@ -59,8 +74,26 @@ public final class MessageFingerprintStore: @unchecked Sendable {
             return false
         }
 
+        if let contentHash, let sourcePath,
+           let existing = crossSourceEntries[contentHash],
+           existing.expiry > now,
+           existing.sourcePath != sourcePath {
+            insertOrRefreshLocked(fingerprint, now: now)
+            return false
+        }
+
         insertOrRefreshLocked(fingerprint, now: now)
+        if let contentHash, let sourcePath {
+            crossSourceEntries[contentHash] = (sourcePath, now.addingTimeInterval(20))
+        }
         return true
+    }
+
+    public func seedCrossSource(contentHash: String, sourcePath: String, now: Date = Date()) {
+        lock.lock()
+        defer { lock.unlock() }
+        pruneExpiredLocked(now: now)
+        crossSourceEntries[contentHash] = (sourcePath, now.addingTimeInterval(20))
     }
 
     /// Clears all in-memory fingerprints immediately.
@@ -69,6 +102,7 @@ public final class MessageFingerprintStore: @unchecked Sendable {
         defer { lock.unlock() }
         entries.removeAll(keepingCapacity: false)
         insertionOrder.removeAll(keepingCapacity: false)
+        crossSourceEntries.removeAll(keepingCapacity: false)
     }
 
     public var count: Int {
@@ -99,6 +133,9 @@ public final class MessageFingerprintStore: @unchecked Sendable {
     }
 
     private func pruneExpiredLocked(now: Date) {
+        if !crossSourceEntries.isEmpty {
+            crossSourceEntries = crossSourceEntries.filter { $0.value.expiry > now }
+        }
         guard !entries.isEmpty else { return }
         var kept: [String] = []
         kept.reserveCapacity(insertionOrder.count)

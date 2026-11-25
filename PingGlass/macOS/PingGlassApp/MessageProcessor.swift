@@ -64,8 +64,13 @@ public final class MessageProcessor: @unchecked Sendable {
         var accepted: [WhatsAppMessage] = []
 
         for candidate in candidates {
-            let sanitizedSender = sanitizeSingleLine(candidate.sender, maxLength: 120)
+            var sanitizedSender = sanitizeSingleLine(candidate.sender, maxLength: 120)
             let sanitizedChatName = sanitizeSingleLine(candidate.chatName, maxLength: 120)
+            if sanitizedSender?.caseInsensitiveCompare("WhatsApp") == .orderedSame,
+               let sanitizedChatName,
+               sanitizedChatName.caseInsensitiveCompare("WhatsApp") != .orderedSame {
+                sanitizedSender = sanitizedChatName
+            }
             let sanitizedText = sanitizeMultilineText(candidate.text, maxLength: config.maxPreviewLength)
             let sanitizedTimestamp = sanitizeSingleLine(candidate.timestamp, maxLength: 40)
             let sanitizedAvatar = sanitizeAvatarDataURI(candidate.avatar)
@@ -98,13 +103,24 @@ public final class MessageProcessor: @unchecked Sendable {
                 elementIdentity: candidate.elementIdentity,
                 occurrenceIndex: candidate.occurrenceIndex
             )
+            let contentHash = MessageFingerprintStore.computeContentHash(
+                sender: sanitizedSender,
+                chatName: sanitizedChatName,
+                text: sanitizedText
+            )
 
             if seedOnly {
                 fingerprintStore.seed(fingerprint, now: now)
+                fingerprintStore.seedCrossSource(contentHash: contentHash, sourcePath: candidate.extractionPath, now: now)
                 continue
             }
 
-            guard fingerprintStore.shouldAccept(fingerprint, now: now) else {
+            guard fingerprintStore.shouldAccept(
+                fingerprint,
+                contentHash: contentHash,
+                sourcePath: candidate.extractionPath,
+                now: now
+            ) else {
                 continue
             }
 
@@ -199,9 +215,17 @@ public final class MessageProcessor: @unchecked Sendable {
     }
 
     private func stripControlCharacters(_ input: String, allowNewlines: Bool) -> String {
+        let directionalFormatting: Set<UInt32> = [
+            0x200B, 0x200C, 0x200D, 0x200E, 0x200F,
+            0x202A, 0x202B, 0x202C, 0x202D, 0x202E,
+            0x2066, 0x2067, 0x2068, 0x2069, 0xFEFF,
+        ]
         var result = ""
         result.reserveCapacity(input.count)
         for scalar in input.unicodeScalars {
+            if directionalFormatting.contains(scalar.value) {
+                continue
+            }
             if CharacterSet.controlCharacters.contains(scalar) {
                 if allowNewlines && (scalar == "\n" || scalar == "\t") {
                     result.unicodeScalars.append(scalar)

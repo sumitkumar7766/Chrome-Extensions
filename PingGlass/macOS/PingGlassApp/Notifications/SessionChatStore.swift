@@ -51,13 +51,34 @@ public final class SessionChatStore {
         let key = Self.chatKey(for: message)
         let entry = ChatBubbleEntry(
             id: message.id,
-            sender: message.sender,
+            sender: message.isOutgoing ? "You" : message.sender,
             text: text,
             timestamp: message.timestamp,
-            isOutgoing: false,
+            isOutgoing: message.isOutgoing,
             isTest: message.isTest
         )
+        appendEntry(entry, forKey: key)
+    }
 
+    @discardableResult
+    public func recordOutgoing(text: String, for message: WhatsAppMessage) -> ChatBubbleEntry? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let key = Self.chatKey(for: message)
+        let timeLabel = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short)
+        let entry = ChatBubbleEntry(
+            id: "out-\(UUID().uuidString)",
+            sender: "You",
+            text: trimmed,
+            timestamp: timeLabel,
+            isOutgoing: true,
+            isTest: message.isTest
+        )
+        appendEntry(entry, forKey: key)
+        return entry
+    }
+
+    private func appendEntry(_ entry: ChatBubbleEntry, forKey key: String) {
         var list = chats[key] ?? []
         if !list.contains(where: { $0.id == entry.id }) {
             list.append(entry)

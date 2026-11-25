@@ -14,6 +14,7 @@ public struct WhatsAppMessage: Codable, Sendable, Equatable {
     public let source: String
     public let confidence: Double
     public let isTest: Bool
+    public let isOutgoing: Bool
 
     public init(
         id: String = UUID().uuidString,
@@ -25,7 +26,8 @@ public struct WhatsAppMessage: Codable, Sendable, Equatable {
         receivedAt: String = ISO8601DateFormatter().string(from: Date()),
         source: String = "whatsapp-desktop",
         confidence: Double = 0.0,
-        isTest: Bool = false
+        isTest: Bool = false,
+        isOutgoing: Bool = false
     ) {
         self.id = id
         self.sender = sender
@@ -37,6 +39,28 @@ public struct WhatsAppMessage: Codable, Sendable, Equatable {
         self.source = source
         self.confidence = min(1.0, max(0.0, confidence))
         self.isTest = isTest
+        self.isOutgoing = isOutgoing
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, sender, chatName, text, timestamp, avatar, receivedAt, source, confidence, isTest, isOutgoing
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try c.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString,
+            sender: try c.decodeIfPresent(String.self, forKey: .sender),
+            chatName: try c.decodeIfPresent(String.self, forKey: .chatName),
+            text: try c.decodeIfPresent(String.self, forKey: .text),
+            timestamp: try c.decodeIfPresent(String.self, forKey: .timestamp),
+            avatar: try c.decodeIfPresent(String.self, forKey: .avatar),
+            receivedAt: try c.decodeIfPresent(String.self, forKey: .receivedAt) ?? ISO8601DateFormatter().string(from: Date()),
+            source: try c.decodeIfPresent(String.self, forKey: .source) ?? "whatsapp-desktop",
+            confidence: try c.decodeIfPresent(Double.self, forKey: .confidence) ?? 0.0,
+            isTest: try c.decodeIfPresent(Bool.self, forKey: .isTest) ?? false,
+            isOutgoing: try c.decodeIfPresent(Bool.self, forKey: .isOutgoing) ?? false
+        )
     }
 }
 
@@ -445,6 +469,7 @@ public struct BridgeEnvelope: Codable, Sendable {
     public let settings: BridgeSettingsPayload?
     public let helperConnected: Bool?
     public let error: String?
+    public let diagnostics: String?
     public let timestamp: String
 
     public init(
@@ -454,6 +479,7 @@ public struct BridgeEnvelope: Codable, Sendable {
         settings: BridgeSettingsPayload? = nil,
         helperConnected: Bool? = nil,
         error: String? = nil,
+        diagnostics: String? = nil,
         timestamp: String = ISO8601DateFormatter().string(from: Date())
     ) {
         self.type = type
@@ -462,7 +488,26 @@ public struct BridgeEnvelope: Codable, Sendable {
         self.settings = settings
         self.helperConnected = helperConnected
         self.error = error
+        self.diagnostics = diagnostics
         self.timestamp = timestamp
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case type, message, status, settings, helperConnected, error, diagnostics, timestamp
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            type: try c.decode(String.self, forKey: .type),
+            message: try c.decodeIfPresent(WhatsAppMessage.self, forKey: .message),
+            status: try c.decodeIfPresent(HelperStatusSnapshot.self, forKey: .status),
+            settings: try c.decodeIfPresent(BridgeSettingsPayload.self, forKey: .settings),
+            helperConnected: try c.decodeIfPresent(Bool.self, forKey: .helperConnected),
+            error: try c.decodeIfPresent(String.self, forKey: .error),
+            diagnostics: try c.decodeIfPresent(String.self, forKey: .diagnostics),
+            timestamp: try c.decodeIfPresent(String.self, forKey: .timestamp) ?? ISO8601DateFormatter().string(from: Date())
+        )
     }
 }
 

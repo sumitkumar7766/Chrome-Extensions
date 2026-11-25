@@ -544,5 +544,229 @@ final class PingGlassTests: XCTestCase {
         XCTAssertEqual(decoded.status?.config?.notificationPosition, .bottomRight)
         XCTAssertEqual(decoded.status?.config?.notificationClickAction, .openGlassChatPopup)
         XCTAssertEqual(decoded.status?.config?.pauseMinutes, 15)
+
+        // Ensure BridgeEnvelope decodes legacy/minimal Chrome messages omitting `timestamp`.
+        var minimalData = Data()
+        let raw = Data("{\"type\":\"start_monitoring\"}".utf8)
+        var len = UInt32(raw.count).littleEndian
+        minimalData.append(Data(bytes: &len, count: 4))
+        minimalData.append(raw)
+        let minimalDecoded = NativeMessagingServer.decodeFrames(from: &minimalData)
+        XCTAssertEqual(minimalDecoded.count, 1)
+        XCTAssertEqual(minimalDecoded.first?.type, "start_monitoring")
+    }
+
+    func testCatalystFullWidthBubbleRowAndContainerDescriptionExtraction() {
+        let extractor = AccessibilityExtractor()
+
+        // Full-width Catalyst AXCell (width 620, midX=610 -> 0.50 of container 620) containing left-aligned inner bubble (x=318, w=180)
+        let innerLeftBubble = AXNodeSnapshot(
+            role: "AXGroup",
+            frame: CGRect(x: 318, y: 400, width: 180, height: 42),
+            children: [
+                AXNodeSnapshot(role: "AXStaticText", value: "Amit"),
+                AXNodeSnapshot(role: "AXStaticText", value: "Meeting started"),
+                AXNodeSnapshot(role: "AXStaticText", value: "1:18 AM"),
+            ]
+        )
+        let fullWidthRow = AXNodeSnapshot(
+            role: "AXCell",
+            identifier: "cat-msg-1",
+            frame: CGRect(x: 300, y: 396, width: 620, height: 50),
+            children: [innerLeftBubble]
+        )
+        let chatScroll = AXNodeSnapshot(
+            role: "AXScrollArea",
+            frame: CGRect(x: 300, y: 80, width: 620, height: 500),
+            children: [fullWidthRow]
+        )
+
+        // Catalyst sidebar row where cell AXDescription carries unread badge + preview while child static text carries time
+        let unreadCell = AXNodeSnapshot(
+            role: "AXCell",
+            identifier: "cat-side-1",
+            descriptionText: "1 unread message",
+            children: [
+                AXNodeSnapshot(role: "AXStaticText", value: "Priya"),
+                AXNodeSnapshot(role: "AXStaticText", value: "Can you check?"),
+                AXNodeSnapshot(role: "AXStaticText", value: "1:19 AM"),
+            ]
+        )
+        let sidebar = AXNodeSnapshot(
+            role: "AXTable",
+            frame: CGRect(x: 0, y: 80, width: 290, height: 500),
+            children: [unreadCell]
+        )
+        let window = AXNodeSnapshot(
+            role: "AXWindow",
+            title: "Amit",
+            frame: CGRect(x: 0, y: 0, width: 920, height: 600),
+            children: [sidebar, chatScroll]
+        )
+
+        let candidates = extractor.extractFromWindowSnapshot(window)
+        let activeIncoming = candidates.filter { $0.extractionPath == "AXActiveChatPane" }
+        let sidebarUnread = candidates.filter { $0.extractionPath == "AXSidebarUnread" }
+
+        XCTAssertEqual(activeIncoming.count, 1)
+        XCTAssertEqual(activeIncoming.first?.direction, .incoming)
+        XCTAssertEqual(activeIncoming.first?.text, "Meeting started")
+
+        XCTAssertEqual(sidebarUnread.count, 1)
+        XCTAssertEqual(sidebarUnread.first?.sender, "Priya")
+        XCTAssertEqual(sidebarUnread.first?.text, "Can you check?")
+    }
+
+    func testNotificationCenterBannerExtractionFiltersNonWhatsAppAndDeduplicatesCrossSource() {
+        let extractor = AccessibilityExtractor()
+
+        let whatsappBanner = AXNodeSnapshot(
+            role: "AXGroup",
+            subrole: "AXNotificationCenterBanner",
+            identifier: "banner-wa-1",
+            children: [
+                AXNodeSnapshot(role: "AXHeading", value: "WhatsApp"),
+                AXNodeSnapshot(role: "AXStaticText", value: "Rahul Sharma"),
+                AXNodeSnapshot(role: "AXStaticText", value: "Reached home safely"),
+                AXNodeSnapshot(role: "AXButton", title: "Close"),
+            ]
+        )
+        let mailBanner = AXNodeSnapshot(
+            role: "AXGroup",
+            subrole: "AXNotificationCenterBanner",
+            identifier: "banner-mail-1",
+            children: [
+                AXNodeSnapshot(role: "AXHeading", value: "Mail"),
+                AXNodeSnapshot(role: "AXStaticText", value: "Newsletter"),
+                AXNodeSnapshot(role: "AXStaticText", value: "Weekly digest"),
+            ]
+        )
+        let ncWindow = AXNodeSnapshot(
+            role: "AXWindow",
+            children: [whatsappBanner, mailBanner]
+        )
+
+        let extracted = extractor.extractWhatsAppBanners(fromNotificationWindowSnapshot: ncWindow)
+        XCTAssertEqual(extracted.count, 1, "Only WhatsApp banners must be extracted; non-WhatsApp banners must be ignored")
+        XCTAssertEqual(extracted[0].sender, "Rahul Sharma")
+        XCTAssertEqual(extracted[0].text, "Reached home safely")
+        XCTAssertEqual(extracted[0].extractionPath, "AXNotificationBanner")
+        XCTAssertEqual(extracted[0].direction, .incoming)
+
+        // Cross-source deduplication: simultaneous AXNotificationBanner + AXSidebarUnread yields 1 message
+        let sidebarDuplicate = ExtractedCandidate(
+            sender: "Rahul Sharma",
+            chatName: "Rahul Sharma",
+            text: "Reached home safely",
+            timestamp: "1:22 AM",
+            direction: .incoming,
+            elementIdentity: "sidebar-row-0",
+            occurrenceIndex: 0,
+            baseConfidence: 0.85,
+            extractionPath: "AXSidebarUnread"
+        )
+        let processor = MessageProcessor()
+        let config = HelperConfiguration(monitoringEnabled: true)
+        let t0 = Date(timeIntervalSince1970: 2000)
+
+        let firstPass = processor.process(candidates: extracted, config: config, seedOnly: false, now: t0)
+        let secondPass = processor.process(candidates: [sidebarDuplicate], config: config, seedOnly: false, now: t0.addingTimeInterval(2))
+        XCTAssertEqual(firstPass.count, 1)
+        XCTAssertEqual(secondPass.count, 0, "Simultaneous sidebar match for same banner message should deduplicate cleanly")
+
+        // Verify composite AXDescription isn't duplicated alongside ordered child leaves and directional marks are stripped
+        let packedBanner = AXNodeSnapshot(
+            role: "AXGroup",
+            subrole: "AXNotificationCenterBanner",
+            descriptionText: "WhatsApp, \u{200E}Amit Verma, \u{200F}See you soon",
+            children: [
+                AXNodeSnapshot(role: "AXHeading", value: "\u{200E}Amit Verma"),
+                AXNodeSnapshot(role: "AXStaticText", value: "\u{200E}See you soon"),
+                AXNodeSnapshot(role: "AXButton", title: "Show less"),
+            ]
+        )
+        let cleanBannerMsgs = processor.process(
+            candidates: extractor.extractWhatsAppBanners(fromNotificationWindowSnapshot: AXNodeSnapshot(role: "AXWindow", children: [packedBanner])),
+            config: config,
+            seedOnly: false,
+            now: t0.addingTimeInterval(5)
+        )
+        XCTAssertEqual(cleanBannerMsgs.count, 1)
+        XCTAssertEqual(cleanBannerMsgs[0].sender, "Amit Verma")
+        XCTAssertEqual(cleanBannerMsgs[0].chatName, "Amit Verma")
+        XCTAssertEqual(cleanBannerMsgs[0].text, "See you soon")
+
+        // Verify SessionChatStore.recordOutgoing & interactive FloatingNotificationPanel(allowsKeyFocus:)
+        let store = SessionChatStore()
+        let incoming = cleanBannerMsgs[0]
+        store.record(incoming)
+        _ = store.recordOutgoing(text: "On my way!", for: incoming)
+        let bubbles = store.messages(for: incoming)
+        XCTAssertEqual(bubbles.count, 2)
+        XCTAssertFalse(bubbles[0].isOutgoing)
+        XCTAssertTrue(bubbles[1].isOutgoing)
+        XCTAssertEqual(bubbles[1].text, "On my way!")
+
+        let replyPanel = FloatingNotificationPanel(contentRect: NSRect(x: 0, y: 0, width: 318, height: 356), allowsKeyFocus: true)
+        XCTAssertTrue(replyPanel.canBecomeKey)
+        XCTAssertFalse(replyPanel.canBecomeMain)
+        XCTAssertTrue(replyPanel.becomesKeyOnlyIfNeeded)
+        replyPanel.close()
+    }
+
+    func testCatalystWrapperBubbleUnwrappingAndButtonSidebarUnread() {
+        let extractor = AccessibilityExtractor()
+
+        // Catalyst collection wrapper AXGroup inside AXScrollArea containing two separate bubble AXGroups
+        let bubble1 = AXNodeSnapshot(
+            role: "AXGroup",
+            frame: CGRect(x: 320, y: 360, width: 190, height: 42),
+            children: [
+                AXNodeSnapshot(role: "AXStaticText", value: "Kiran"),
+                AXNodeSnapshot(role: "AXStaticText", value: "Reaching in 5 mins"),
+                AXNodeSnapshot(role: "AXStaticText", value: "1:44 AM"),
+            ]
+        )
+        let bubble2 = AXNodeSnapshot(
+            role: "AXGroup",
+            frame: CGRect(x: 680, y: 420, width: 170, height: 40),
+            children: [
+                AXNodeSnapshot(role: "AXStaticText", value: "Okay see you"),
+                AXNodeSnapshot(role: "AXStaticText", value: "1:45 AM"),
+            ]
+        )
+        let collectionWrapper = AXNodeSnapshot(
+            role: "AXGroup",
+            frame: CGRect(x: 300, y: 80, width: 620, height: 500),
+            children: [bubble1, bubble2]
+        )
+        let chatScroll = AXNodeSnapshot(
+            role: "AXScrollArea",
+            frame: CGRect(x: 300, y: 80, width: 620, height: 500),
+            children: [collectionWrapper]
+        )
+
+        // Catalyst sidebar chat item exposed as AXButton with packed description
+        let buttonCell = AXNodeSnapshot(
+            role: "AXButton",
+            descriptionText: "Rohan, 1:45 AM, Call me now, 2 unread messages",
+            children: []
+        )
+        let window = AXNodeSnapshot(
+            role: "AXWindow",
+            title: "Kiran",
+            frame: CGRect(x: 0, y: 0, width: 920, height: 600),
+            children: [buttonCell, chatScroll]
+        )
+
+        let candidates = extractor.extractFromWindowSnapshot(window)
+        let incomingBubbles = candidates.filter { $0.extractionPath == "AXActiveChatPane" && $0.direction == .incoming }
+        let sidebarUnread = candidates.filter { $0.extractionPath == "AXSidebarUnread" }
+
+        XCTAssertEqual(incomingBubbles.count, 1)
+        XCTAssertEqual(incomingBubbles.first?.text, "Reaching in 5 mins")
+        XCTAssertEqual(sidebarUnread.count, 1)
+        XCTAssertEqual(sidebarUnread.first?.sender, "Rohan")
+        XCTAssertEqual(sidebarUnread.first?.text, "Call me now")
     }
 }
